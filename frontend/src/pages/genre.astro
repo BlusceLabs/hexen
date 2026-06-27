@@ -1,0 +1,119 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getMovieGenres, getTVGenres } from '../lib/api';
+
+const type = Astro.url.searchParams.get('type') || 'movie';
+const genreId = Astro.url.searchParams.get('id') || '';
+const genreName = Astro.url.searchParams.get('name') || 'Genre';
+
+let genres: any[] = [];
+try {
+  genres = type === 'tv' ? await getTVGenres() : await getMovieGenres();
+} catch {}
+---
+<BaseLayout title={`${genreName} - ${type === 'tv' ? 'TV Shows' : 'Movies'}`}>
+  <div class="genre-page">
+    <div class="genre-hero">
+      <div class="breadcrumb">
+        <a href="/browse">Browse</a>
+        <span>›</span>
+        <a href={`/browse?type=${type}`}>{type === 'tv' ? 'TV Shows' : 'Movies'}</a>
+        <span>›</span>
+        <span class="current">{genreName}</span>
+      </div>
+      <h1>{genreName}</h1>
+      <p class="subtitle">{type === 'tv' ? 'TV Shows' : 'Movies'} in this genre</p>
+    </div>
+
+    <div class="container genre-content">
+      <div class="genre-sidebar">
+        <h3>Genres</h3>
+        <nav class="genre-nav">
+          {genres.map((g: any) => (
+            <a
+              href={`/genre?type=${type}&id=${g.id}&name=${encodeURIComponent(g.name)}`}
+              class={`genre-link ${g.id == genreId ? 'active' : ''}`}
+            >
+              {g.name}
+            </a>
+          ))}
+        </nav>
+      </div>
+
+      <div class="genre-main">
+        <div class="info-banner">
+          <p>Browse all <strong>{genreName}</strong> {type === 'tv' ? 'TV shows' : 'movies'}. Use the search or navigation to find specific titles.</p>
+          <div class="quick-links">
+            <a href={`/search?q=${encodeURIComponent(genreName)}`} class="quick-link"> Search {genreName}</a>
+            <a href={`/browse?type=${type}`} class="quick-link">Browse All</a>
+          </div>
+        </div>
+
+        <div class="suggestions">
+          <h2>Popular in {genreName}</h2>
+          <div class="suggestion-grid">
+            {genreName === 'Action' && <>
+              <a href="/details/27205?type=movie" class="suggestion-card"><span>—</span>Inception</a>
+              <a href="/details/550?type=movie" class="suggestion-card"><span>—</span>Fight Club</a>
+              <a href="/details/299536?type=movie" class="suggestion-card"><span>—</span>Avengers: Infinity War</a>
+              <a href="/details/155?type=movie" class="suggestion-card"><span>—</span>The Dark Knight</a>
+            </>}
+            {genreName === 'Drama' && <>
+              <a href="/details/278?type=movie" class="suggestion-card"><span>—</span>The Shawshank Redemption</a>
+              <a href="/details/238?type=movie" class="suggestion-card"><span>—</span>The Godfather</a>
+              <a href="/details/1399?type=tv" class="suggestion-card"><span>—</span>Game of Thrones</a>
+              <a href="/details/1398?type=tv" class="suggestion-card"><span>—</span>Breaking Bad</a>
+            </>}
+            {genreName === 'Science Fiction' && <>
+              <a href="/details/27205?type=movie" class="suggestion-card"><span>—</span>Inception</a>
+              <a href="/details/438631?type=movie" class="suggestion-card"><span>—</span>Dune</a>
+              <a href="/details/76479?type=tv" class="suggestion-card"><span>—</span>Stranger Things</a>
+              <a href="/details/63174?type=tv" class="suggestion-card"><span>—</span>Loki</a>
+            </>}
+            {!['Action', 'Drama', 'Science Fiction'].includes(genreName) && (
+              <a href={`/browse?type=${type}`} class="suggestion-card"><span></span>Browse All {type === 'tv' ? 'TV Shows' : 'Movies'}</a>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .genre-page { min-height: 80vh; }
+  .genre-hero { padding: 40px 24px; background: linear-gradient(135deg, var(--bg-secondary), var(--bg-primary)); border-bottom: 1px solid var(--border); }
+  .breadcrumb { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-bottom: 16px; }
+  .breadcrumb a { color: var(--text-secondary); transition: color 0.2s; }
+  .breadcrumb a:hover { color: var(--accent); }
+  .breadcrumb .current { color: var(--text-primary); font-weight: 600; }
+  .genre-hero h1 { font-size: 42px; font-weight: 800; margin-bottom: 8px; }
+  .subtitle { color: var(--text-secondary); font-size: 16px; }
+
+  .genre-content { display: grid; grid-template-columns: 220px 1fr; gap: 32px; padding: 32px 24px; }
+
+  .genre-sidebar h3 { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: var(--text-secondary); }
+  .genre-nav { display: flex; flex-direction: column; gap: 2px; }
+  .genre-link { padding: 8px 16px; border-radius: var(--radius-sm); font-size: 14px; color: var(--text-secondary); transition: all 0.2s; }
+  .genre-link:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .genre-link.active { background: rgba(229,9,20,0.1); color: var(--accent); font-weight: 600; }
+
+  .info-banner { padding: 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 32px; }
+  .info-banner p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+  .quick-links { display: flex; gap: 12px; margin-top: 12px; }
+  .quick-link { padding: 8px 16px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; transition: all 0.2s; }
+  .quick-link:hover { background: var(--accent); border-color: var(--accent); color: white; }
+
+  .suggestions h2 { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+  .suggestion-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .suggestion-card { display: flex; align-items: center; gap: 12px; padding: 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); transition: all 0.2s; font-weight: 500; }
+  .suggestion-card:hover { background: var(--bg-hover); border-color: var(--accent); transform: translateY(-2px); }
+  .suggestion-card span { font-size: 24px; }
+
+  @media (max-width: 768px) {
+    .genre-content { grid-template-columns: 1fr; }
+    .genre-sidebar { display: none; }
+    .genre-hero h1 { font-size: 32px; }
+    .suggestion-grid { grid-template-columns: 1fr; }
+  }
+</style>

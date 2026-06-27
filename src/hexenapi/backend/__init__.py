@@ -1,0 +1,158 @@
+"""
+### backend - Unified API Client (formerly v1, v2, v3)
+**Endpoints:** 
+- H5 API: `h5-api.aoneroom.com`
+- H5 Web: `h5.aoneroom.com` 
+- Android API: `api3.aoneroom.com` through `api6.aoneroom.com`
+
+Unified API client combining all previous versions:
+- v1: Web scraping + partial REST-API for H5 frontend
+- v2: Pure REST-API for H5 backend
+- v3: Android app API with multi-host support
+
+Provides comprehensive access to Moviebox content through multiple endpoints
+with fallback support and enhanced features like dub language selection and
+custom resolutions.
+
+- Approach: Hybrid (REST-API + Web scraping + Android API)
+- Target surface: H5 web interfaces, API backends, Android app
+- Use case: Full content catalog access, structured queries, streaming
+- Features: Multi-version support, dub languages, custom resolutions, web scraping
+"""
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+from throttlebuster import (  # noqa: E402
+    DownloadedFile,
+    DownloadMode,
+    DownloadTracker,
+)
+
+from hexenapi.backend.constants import (  # noqa: E402
+    DOWNLOAD_QUALITIES,
+    HOST_URL,
+    MIRROR_HOSTS,
+    SELECTED_HOST,
+    SubjectType,
+    CustomResolutionType,
+)
+from hexenapi.backend.core import (  # noqa: E402
+    AnimeDetails,
+    ContentCategory,
+    EducationDetails,
+    Homepage,
+    ItemDetails,
+    MovieDetails,
+    MusicDetails,
+    Search,
+    SearchSuggestion,
+    SearchWithFilter,
+    SingleItemDetails,
+    TVSeriesDetails,
+)
+from hexenapi.backend.core_v1 import (  # noqa: E402
+    HotMoviesAndTVSeries,
+    MovieDetails as MovieDetailsV1,
+    PopularSearch,
+    Recommend,
+    Trending,
+    TVSeriesDetails as TVSeriesDetailsV1,
+)
+from hexenapi.backend.download import (  # noqa: E402
+    DownloadableSingleFilesDetail,
+    DownloadableTVSeriesFilesDetail,
+)
+from hexenapi.backend.download_v1 import (  # noqa: E402
+    CaptionFileDownloader,
+    DownloadableMovieFilesDetail,
+    DownloadableTVSeriesFilesDetail as DownloadableTVSeriesFilesDetailV1,
+    MediaFileDownloader,
+    resolve_media_file_to_be_downloaded,
+)
+from hexenapi.backend.extras.auto import MovieAuto  # noqa: E402
+from hexenapi.backend.requests import Session  # noqa: E402
+from hexenapi.backend.tmdb import TMDBClient as TMDBScraper  # noqa: E402
+from hexenapi.backend.tmdb.endpoints import (
+    Movies as TMDBMovies,
+    TV as TMDBTV,
+    People as TMDBPeople,
+    Search as TMDBSearch,
+    Discover as TMDBDiscover,
+    Trending as TMDBTrending,
+    Genres as TMDBGenres,
+    Configuration as TMDBConfiguration,
+)
+
+# v3 (Android app API) exports — prefixed "Android" to distinguish from H5 API classes
+from hexenapi.backend.http_client import MovieBoxHttpClient  # noqa: E402
+from hexenapi.backend.core_v3 import (  # noqa: E402
+    Homepage as AndroidHomepage,
+    Search as AndroidSearch,
+    SearchV2 as AndroidSearchV2,
+    ItemDetails as AndroidItemDetails,
+    SeasonDetails as AndroidSeasonDetails,
+    DownloadableVideoFilesDetail as AndroidDownloadableFilesDetail,
+    DownloadableCaptionFileDetails as AndroidDownloadableCaptionFileDetails,
+)
+from hexenapi.backend.download_v3 import (  # noqa: E402
+    MediaFileDownloader as AndroidMediaFileDownloader,
+    CaptionFileDownloader as AndroidCaptionFileDownloader,
+    resolve_media_file_to_be_downloaded as android_resolve_media_file,
+)
+
+__all__ = [
+    # Core v2 functionality
+    "Search",
+    "Session",
+    "Homepage",
+    "ItemDetails",
+    "SearchSuggestion",
+    "SingleItemDetails",
+    "TVSeriesDetails",
+    "MovieDetails",
+    "MusicDetails",
+    "AnimeDetails",
+    "EducationDetails",
+    # v1 functionality (web scraping)
+    "Trending",
+    "Recommend",
+    "PopularSearch",
+    "HotMoviesAndTVSeries",
+    "MovieDetailsV1",
+    "TVSeriesDetailsV1",
+    # Download functionality
+    "DownloadableSingleFilesDetail",
+    "DownloadableTVSeriesFilesDetail",
+    "DownloadableMovieFilesDetail",
+    "DownloadableTVSeriesFilesDetailV1",
+    "CaptionFileDownloader",
+    "MediaFileDownloader",
+    "resolve_media_file_to_be_downloaded",
+    # Auto download
+    "MovieAuto",
+    # Constants
+    "DOWNLOAD_QUALITIES",
+    "MIRROR_HOSTS",
+    "SELECTED_HOST",
+    "HOST_URL",
+    "SubjectType",
+    "CustomResolutionType",
+    # Others
+    "DownloadedFile",
+    "DownloadMode",
+    "DownloadTracker",
+    # v3 (Android app API) exports
+    "MovieBoxHttpClient",
+    "AndroidHomepage",
+    "AndroidSearch",
+    "AndroidSearchV2",
+    "AndroidItemDetails",
+    "AndroidSeasonDetails",
+    "AndroidDownloadableFilesDetail",
+    "AndroidDownloadableCaptionFileDetails",
+    "AndroidMediaFileDownloader",
+    "AndroidCaptionFileDownloader",
+    "android_resolve_media_file",
+]

@@ -1,0 +1,71 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPopularMovies, getTopRatedMovies, getNowPlayingMovies, getUpcomingMovies } from '../lib/api';
+
+const sections = [
+  { key: 'popular', title: 'Popular', loader: getPopularMovies },
+  { key: 'topRated', title: 'Top Rated', loader: getTopRatedMovies },
+  { key: 'nowPlaying', title: 'Now Playing', loader: getNowPlayingMovies },
+  { key: 'upcoming', title: 'Upcoming', loader: getUpcomingMovies },
+] as const;
+
+type SectionState = { data: any[]; error: boolean };
+const state: Record<string, SectionState> = {};
+for (const s of sections) state[s.key] = { data: [], error: false };
+
+await Promise.all(sections.map(async (s) => {
+  try { state[s.key].data = await s.loader(); } catch { state[s.key].error = true; }
+}));
+
+const anyError = Object.values(state).some((s: any) => s.error);
+---
+<BaseLayout title="Movies">
+  <div class="container">
+    <h1 class="page-title">Movies</h1>
+    {anyError && <div class="error-msg">Some categories failed to load. <a href="/movies">Retry</a></div>}
+
+    {sections.map((section) => {
+      const s = state[section.key];
+      return (
+        <div>
+          <h2 class="section-title">{section.title}</h2>
+          {s.error ? (
+            <div class="error-msg">Failed to load {section.title.toLowerCase()}. <a href="/movies">Retry</a></div>
+          ) : s.data.length > 0 ? (
+            <div class="grid grid-5">
+              {s.data.slice(0, 10).map((m) => (
+                <a href={'/movie/' + m.id} class="card">
+                  <div class="poster-wrap">
+                    {m.poster ? (
+                      <img src={m.poster} alt={m.title} loading="lazy" />
+                    ) : (
+                      <div class="poster-ph">—</div>
+                    )}
+                    {m.rating > 0 && (
+                      <div class="card-rating"> {(m.rating / 10).toFixed(1)}</div>
+                    )}
+                  </div>
+                  <div class="card-info">
+                    <h3>{m.title}</h3>
+                    {m.year && <span class="card-year">{m.year}</span>}
+                  </div>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <div class="empty-state">
+              <span class="empty-icon">—</span>
+              <p>No {section.title.toLowerCase()} available right now.</p>
+              <p class="empty-hint">Try again later or browse a different category.</p>
+            </div>
+          )}
+        </div>
+      );
+    })}
+  </div>
+</BaseLayout>
+
+<style>
+  .page-title { font-size: 36px; font-weight: 800; padding: 40px 0 0; }
+  .section-title { font-size: 20px; font-weight: 700; margin: 40px 0 16px; }
+</style>

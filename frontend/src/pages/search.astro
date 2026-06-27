@@ -1,0 +1,16 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SearchPage from '../components/SearchPage.svelte';
+import { searchMulti } from '../lib/api';
+
+const query = Astro.url.searchParams.get('q') || '';
+let results: any[] = [];
+let error = false;
+
+if (query) {
+  try { results = await searchMulti(query); } catch { error = true; }
+}
+---
+<BaseLayout title={query ? `Search: ${query}` : 'Search'}>
+  <SearchPage initialQuery={query} initialResults={results} initialError={error} client:load />
+</BaseLayout>

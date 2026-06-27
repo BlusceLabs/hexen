@@ -1,0 +1,213 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import FavoriteButton from '../../components/FavoriteButton.svelte';
+import { getMovieDetails } from '../../lib/api';
+
+const { id } = Astro.params;
+let movie: any = null;
+let error = false;
+
+try {
+  movie = await getMovieDetails(Number(id));
+} catch {
+  error = true;
+}
+---
+<BaseLayout title={movie?.title || 'Movie Not Found'} description={movie?.overview} image={movie?.poster}>
+  {error ? (
+    <div class="error-page">
+      <h2>404</h2>
+      <p>Movie not found. It may have been removed or the ID is invalid.</p>
+      <a href="/movies" class="btn-primary">Browse Movies →</a>
+    </div>
+  ) : movie && (
+    <div class="detail-backdrop" style={`background-image: url(${movie.backdrop || movie.poster})`}></div>
+    <div class="detail-backdrop-gradient"></div>
+
+    <div class="container detail-layout">
+      <div class="poster-col">
+        <div class="poster-wrap">
+          {movie.poster ? <img src={movie.poster} alt={movie.title} class="detail-poster" /> : <div class="detail-poster-ph">—</div>}
+          <FavoriteButton id={movie.id} title={movie.title} poster={movie.poster} year={movie.year} media_type="movie" client:load />
+        </div>
+      </div>
+      <div class="info-col">
+        <h1>{movie.title} <span class="year">({movie.year})</span></h1>
+        {movie.tagline && <p class="tagline">"{movie.tagline}"</p>}
+        <div class="meta-row">
+          {movie.rating > 0 && <span class="badge badge-gold"> {(movie.rating / 10).toFixed(1)}</span>}
+          {movie.genres.map((g: string) => <span class="badge">{g}</span>)}
+          {movie.status && <span class="badge">{movie.status}</span>}
+          {movie.runtime > 0 && <span class="badge">{Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>}
+          {movie.imdb_id && <a href={`https://imdb.com/title/${movie.imdb_id}`} target="_blank" rel="noopener" class="badge badge-accent">IMDb</a>}
+        </div>
+        <p class="overview">{movie.overview}</p>
+
+        {movie.budget > 0 && (
+          <div class="stats">
+            <div class="stat"><span class="label">Budget</span><span>${(movie.budget / 1_000_000).toFixed(1)}M</span></div>
+            <div class="stat"><span class="label">Revenue</span><span>${(movie.revenue / 1_000_000).toFixed(1)}M</span></div>
+          </div>
+        )}
+
+        {movie.videos.length > 0 && (
+          <div class="detail-section">
+            <h2>Videos ({movie.videos.length})</h2>
+            <div class="video-grid">
+              {movie.videos.slice(0, 4).map((v: any) => (
+                <div class="video-card">
+                  <iframe src={`https://www.youtube.com/embed/${v.key}`} title={v.name} allowfullscreen loading="lazy"></iframe>
+                  <p class="video-name">{v.name} <span class="badge">{v.type}</span></p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {movie.cast.length > 0 && (
+          <div class="detail-section">
+            <h2>Cast ({movie.cast.length})</h2>
+            <div class="cast-grid">
+              {movie.cast.slice(0, 12).map((c: any) => (
+                <a href={`/person/${c.id}`} class="cast-card">
+                  {c.profile ? <img src={c.profile} alt={c.name} class="cast-img" loading="lazy" /> : <div class="cast-ph">—</div>}
+                  <p class="cast-name">{c.name}</p>
+                  <p class="cast-char">{c.character}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {movie.watch_providers && Object.keys(movie.watch_providers).length > 0 && (
+          <div class="detail-section">
+            <h2>Where to Watch</h2>
+            {Object.entries(movie.watch_providers).slice(0, 3).map(([region, providers]: [string, any]) => (
+              <div class="providers">
+                <span class="provider-region">{region}</span>
+                <div class="provider-list">
+                  {providers.map((p: any) => <span class="provider-badge"><img src={p.logo_url} alt={p.provider_name} class="provider-logo" loading="lazy" />{p.provider_name}</span>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {movie.release_dates.length > 0 && (
+          <div class="detail-section">
+            <h2>Release Dates</h2>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead><tr><th>Country</th><th>Certification</th><th>Date</th></tr></thead>
+                <tbody>
+                  {movie.release_dates.slice(0, 8).map((rd: any) => (
+                    <tr><td>{rd.country}</td><td>{rd.certification || '—'}</td><td>{rd.release_date || '—'}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {movie.alternative_titles.length > 0 && (
+          <div class="detail-section">
+            <h2>Alternative Titles</h2>
+            <div class="tags">
+              {movie.alternative_titles.slice(0, 10).map((t: any) => <span class="tag">{t.iso_3166_1}: {t.title}</span>)}
+            </div>
+          </div>
+        )}
+
+        {movie.keywords.length > 0 && (
+          <div class="detail-section">
+            <h2>Keywords</h2>
+            <div class="tags">
+              {movie.keywords.map((k: string) => <span class="tag">{k}</span>)}
+            </div>
+          </div>
+        )}
+
+        {movie.reviews.length > 0 && (
+          <div class="detail-section">
+            <h2>Reviews ({movie.reviews.length})</h2>
+            {movie.reviews.slice(0, 5).map((r: any) => (
+              <div class="review-card">
+                <div class="review-header">
+                  <strong>{r.author}</strong>
+                  {r.rating && <span class="badge badge-gold"> {r.rating}/10</span>}
+                </div>
+                <p>{r.content.slice(0, 300)}{r.content.length > 300 ? '...' : ''}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {movie.logos.length > 0 && (
+          <div class="detail-section">
+            <h2>Title Logos ({movie.logos.length})</h2>
+            <div class="logos">
+              {movie.logos.map((l: any) => <img src={l.url} alt={movie.title + ' logo'} class="logo-img" />)}
+            </div>
+          </div>
+        )}
+
+        {movie.backdrops.length > 0 && (
+          <div class="detail-section">
+            <h2>Backdrops ({movie.backdrops.length})</h2>
+            <div class="backdrop-grid">
+              {movie.backdrops.slice(0, 6).map((b: any) => <img src={b.url} alt="" class="backdrop-img" loading="lazy" />)}
+            </div>
+          </div>
+        )}
+
+        {movie.translations.length > 0 && (
+          <div class="detail-section">
+            <h2>Translations ({movie.translations.length})</h2>
+            <div class="tags">
+              {movie.translations.map((t: any) => <span class="tag">{t.english_name}</span>)}
+            </div>
+          </div>
+        )}
+
+        {movie.similar.length > 0 && (
+          <div class="detail-section">
+            <h2>Similar Movies</h2>
+            <div class="similar-grid">
+              {movie.similar.slice(0, 6).map((m: any) => (
+                <a href={`/movie/${m.id}`} class="mini-card">
+                  {m.poster ? <img src={m.poster} alt={m.title} loading="lazy" /> : <div class="mini-ph">—</div>}
+                  <p>{m.title}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {movie.recommendations.length > 0 && (
+          <div class="detail-section">
+            <h2>Recommended</h2>
+            <div class="similar-grid">
+              {movie.recommendations.slice(0, 6).map((m: any) => (
+                <a href={`/movie/${m.id}`} class="mini-card">
+                  {m.poster ? <img src={m.poster} alt={m.title} loading="lazy" /> : <div class="mini-ph">—</div>}
+                  <p>{m.title}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )}
+</BaseLayout>
+
+<style>
+  h1 { font-size: 36px; font-weight: 800; }
+  .year { color: var(--text-secondary); font-weight: 400; }
+  .tagline { font-style: italic; color: var(--text-secondary); margin: 8px 0 16px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .overview { font-size: 16px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 24px; }
+  .stats { display: flex; gap: 32px; margin-bottom: 24px; }
+  .stat .label { display: block; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; }
+  .stat span:last-child { font-size: 18px; font-weight: 700; }
+</style>

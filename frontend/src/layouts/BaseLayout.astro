@@ -1,0 +1,356 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+}
+
+const { title, description = 'Discover and stream movies, TV shows — powered by hexenapi', image } = Astro.props;
+const url = Astro.url.href;
+const isHome = Astro.url.pathname === '/home' || Astro.url.pathname === '/';
+
+// Determine if we need backdrop overlay
+const needBackdrop = !isHome;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content={description} />
+  <meta name="theme-color" content="#0a0a0a" />
+  <title>{title} — Hexen</title>
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content={`${title} — Hexen`} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={url} />
+  {image && <meta property="og:image" content={image} />}
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' fill='%23ff2d55'>▶</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- ─── Header ──────────────────────────────────── -->
+  <header class="site-header">
+    <div class="header-inner">
+      <button class="menu-btn" id="menu-toggle" aria-label="Menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+      </button>
+      <a href="/home" class="logo-link">
+        <span class="logo-icon">▶</span>
+        <span class="logo-text">Hexen</span>
+      </a>
+      <div class="header-spacer"></div>
+      <form class="search-form" action="/search" method="GET" role="search">
+        <input type="text" name="q" placeholder="Search movies, TV shows..." autocomplete="off" aria-label="Search" />
+        <button type="submit" aria-label="Search" class="search-submit">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 11.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        </button>
+      </form>
+      <nav class="header-nav">
+        <a href="/watch" class="nav-icon" title="Stream" aria-label="Stream">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </a>
+        <a href="/favorites" class="nav-icon" title="Favorites" aria-label="Favorites">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ─── Sidebar ─────────────────────────────────── -->
+  <aside class="site-sidebar" id="sidebar">
+    <nav class="sidebar-nav">
+      <a href="/home" class={`sidebar-item ${Astro.url.pathname === '/home' || Astro.url.pathname === '/' ? 'active' : ''}`}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>Home</span>
+      </a>
+      <a href="/browse" class={`sidebar-item ${Astro.url.pathname === '/browse' ? 'active' : ''}`}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>
+        <span>Browse</span>
+      </a>
+      <a href="/search" class={`sidebar-item ${Astro.url.pathname === '/search' ? 'active' : ''}`}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <span>Search</span>
+      </a>
+      <a href="/watch" class={`sidebar-item ${Astro.url.pathname === '/watch' ? 'active' : ''}`}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <span>Stream</span>
+      </a>
+      <div class="sidebar-divider"></div>
+      <a href="/favorites" class={`sidebar-item ${Astro.url.pathname === '/favorites' ? 'active' : ''}`}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+        <span>Favorites</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ─── Backdrop overlay for detail pages ──────────── -->
+  {needBackdrop && <div class="backdrop-overlay"></div>}
+
+  <!-- ─── Main Content ────────────────────────────── -->
+  <main class={`main-content ${isHome ? 'main-full' : ''}`}>
+    <slot />
+  </main>
+
+  <script>
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const main = document.querySelector('.main-content');
+    const backdrop = document.querySelector('.backdrop-overlay');
+
+    menuToggle?.addEventListener('click', () => {
+      sidebar?.classList.toggle('collapsed');
+      if (backdrop) {
+        backdrop.classList.toggle('sidebar-open');
+      }
+    });
+
+    // Close sidebar when clicking backdrop overlay
+    backdrop?.addEventListener('click', () => {
+      sidebar?.classList.add('collapsed');
+      backdrop.classList.remove('sidebar-open');
+    });
+
+    // Mobile: close sidebar when resizing to mobile
+    window.addEventListener('resize', () => {
+      if (window.innerWidth <= 768) {
+        sidebar?.classList.add('collapsed');
+        backdrop?.classList.remove('sidebar-open');
+      }
+    });
+  </script>
+</body>
+</html>
+
+<style>
+  /* ─── Header ──────────────────────────────────── */
+  .site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--nav-height);
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    z-index: 100;
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 20px;
+    gap: 16px;
+  }
+
+  .menu-btn {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    padding: 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+
+  .menu-btn:hover { background: var(--bg-hover); }
+
+  .logo-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .logo-icon {
+    color: var(--accent);
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  .header-spacer { flex: 1; }
+
+  .search-form {
+    display: flex;
+    max-width: 400px;
+    flex: 1;
+    margin: 0 8px;
+  }
+
+  .search-form input {
+    flex: 1;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-right: none;
+    border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+    padding: 10px 16px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-form input:focus { border-color: var(--accent); }
+  .search-form input::placeholder { color: var(--text-tertiary); }
+
+  .search-submit {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+    padding: 0 18px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .search-submit:hover { background: var(--bg-hover); }
+
+  .header-nav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+  }
+
+  .nav-icon:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+
+  /* ─── Sidebar ─────────────────────────────────── */
+  .site-sidebar {
+    position: fixed;
+    top: var(--nav-height);
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-width);
+    background: var(--bg-primary);
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 90;
+    transition: width 0.2s ease;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .site-sidebar.collapsed { width: var(--sidebar-collapsed); }
+  .site-sidebar.collapsed .sidebar-item span { display: none; }
+  .site-sidebar.collapsed .sidebar-divider { margin: 8px; }
+
+  .sidebar-nav { padding: 12px 0; }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+    margin: 0 8px 2px 0;
+    transition: all 0.2s ease;
+    letter-spacing: -0.01em;
+  }
+
+  .sidebar-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .sidebar-item.active {
+    background: var(--accent-gradient);
+    color: white;
+    font-weight: 600;
+  }
+
+  .sidebar-item.active svg { fill: white; }
+
+  .sidebar-item svg { flex-shrink: 0; }
+
+  .sidebar-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 24px 8px 16px;
+  }
+
+  /* ─── Backdrop Overlay ─────────────────────────── */
+  .backdrop-overlay {
+    position: fixed;
+    top: var(--nav-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 85;
+  }
+
+  .backdrop-overlay.sidebar-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ─── Main ─────────────────────────────────────── */
+  .main-content {
+    margin-top: var(--nav-height);
+    margin-left: var(--sidebar-width);
+    min-height: calc(100vh - var(--nav-height));
+    padding: 0;
+    transition: margin-left 0.2s ease;
+  }
+
+  .main-full {
+    margin-left: var(--sidebar-collapsed);
+  }
+
+  @media (max-width: 1024px) {
+    .site-sidebar { width: var(--sidebar-collapsed); }
+    .site-sidebar .sidebar-item span { display: none; }
+    .main-content { margin-left: var(--sidebar-collapsed); }
+    .search-form { margin: 0 4px; }
+  }
+
+  @media (max-width: 768px) {
+    .site-sidebar { display: none; }
+    .main-content { margin-left: 0; }
+    .search-form { margin: 0; max-width: 200px; }
+    .logo-text { display: none; }
+  }
+
+  @media (max-width: 480px) {
+    .search-form input { font-size: 13px; padding: 8px 12px; }
+    .header-inner { padding: 0 12px; }
+  }
+</style>

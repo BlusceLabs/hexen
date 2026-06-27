@@ -1,0 +1,120 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPersonDetails } from '../../lib/api';
+
+const { id } = Astro.params;
+let person: any = null;
+let error = false;
+
+try {
+  person = await getPersonDetails(Number(id));
+} catch {
+  error = true;
+}
+---
+<BaseLayout title={person?.name || 'Person Not Found'}>
+  {error ? (
+    <div class="error-page">
+      <h2>404</h2>
+      <p>Person not found.</p>
+      <a href="/browse" class="btn-primary">Browse Content</a>
+    </div>
+  ) : person && (
+    <div class="container person-page">
+      <div class="person-hero">
+        <div class="person-photo">
+          {person.profile ? <img src={person.profile} alt={person.name} /> : <div class="photo-ph">—</div>}
+        </div>
+        <div class="person-info">
+          <h1>{person.name}</h1>
+          {person.known_for && <p class="known-for">{person.known_for}</p>}
+          <div class="facts">
+            {person.birthday && <span class="fact">Born {person.birthday}</span>}
+            {person.deathday && <span class="fact">Died {person.deathday}</span>}
+            {person.place_of_birth && <span class="fact">{person.place_of_birth}</span>}
+          </div>
+        </div>
+      </div>
+
+      {person.biography && (
+        <section class="bio-section">
+          <h2>Biography</h2>
+          <p>{person.biography}</p>
+        </section>
+      )}
+
+      {person.movie_credits.length > 0 && (
+        <section class="credits-section">
+          <div class="section-header">
+            <h2>Movie Credits</h2>
+            <span class="count">{person.movie_credits.length}</span>
+          </div>
+          <div class="yt-grid">
+            {person.movie_credits.slice(0, 12).map((m: any) => (
+              <a href={`/details/${m.id}?type=movie`} class="yt-card">
+                <div class="yt-thumb">
+                  {m.poster ? <img src={m.poster} alt={m.title} loading="lazy" /> : <div class="yt-thumb-ph">—</div>}
+                </div>
+                <div class="yt-info">
+                  <div class="yt-meta">
+                    <div class="yt-title">{m.title}</div>
+                    {m.year && <div class="yt-stats">{m.year}</div>}
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {person.tv_credits.length > 0 && (
+        <section class="credits-section">
+          <div class="section-header">
+            <h2>TV Credits</h2>
+            <span class="count">{person.tv_credits.length}</span>
+          </div>
+          <div class="yt-grid">
+            {person.tv_credits.slice(0, 12).map((s: any) => (
+              <a href={`/details/${s.id}?type=tv`} class="yt-card">
+                <div class="yt-thumb">
+                  {s.poster ? <img src={s.poster} alt={s.title} loading="lazy" /> : <div class="yt-thumb-ph">—</div>}
+                </div>
+                <div class="yt-info">
+                  <div class="yt-meta">
+                    <div class="yt-title">{s.title}</div>
+                    {s.year && <div class="yt-stats">{s.year}</div>}
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  )}
+</BaseLayout>
+
+<style>
+  .person-page { padding: 24px; }
+  .person-hero { display: flex; gap: 24px; margin-bottom: 32px; }
+  .person-photo { width: 200px; flex-shrink: 0; }
+  .person-photo img { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: var(--radius); }
+  .photo-ph { width: 100%; aspect-ratio: 2/3; background: var(--bg-card); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 64px; }
+  .person-info { padding-top: 12px; }
+  .person-info h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+  .known-for { color: var(--text-secondary); font-size: 14px; margin-bottom: 12px; }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .fact { font-size: 13px; color: var(--text-secondary); padding: 4px 10px; background: var(--bg-chip); border-radius: 6px; }
+
+  .bio-section { margin-bottom: 32px; }
+  .bio-section h2 { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+  .bio-section p { font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+
+  .credits-section { margin-bottom: 32px; }
+  .count { font-size: 14px; color: var(--text-secondary); }
+
+  @media (max-width: 600px) {
+    .person-hero { flex-direction: column; align-items: center; text-align: center; }
+    .person-photo { width: 160px; }
+  }
+</style>

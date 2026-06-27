@@ -1,0 +1,211 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPopularMovies, getPopularTV } from '../lib/api';
+
+let featured: any[] = [];
+let featuredTV: any[] = [];
+try { featured = await getPopularMovies(); } catch {}
+try { featuredTV = await getPopularTV(); } catch {}
+
+const heroMovie = featured[0];
+---
+<BaseLayout title="Hexen — Movie & TV Discovery">
+  <div class="landing">
+    {/* Hero */}
+    <section class="hero">
+      <div class="hero-bg" style={heroMovie?.backdrop ? `background-image: url(${heroMovie.backdrop})` : heroMovie?.poster ? `background-image: url(${heroMovie.poster})` : ''}></div>
+      <div class="hero-overlay"></div>
+      <div class="container hero-content">
+        <span class="hero-badge">Free Streaming</span>
+        <h1>Watch Movies &<br/>TV Shows <span class="accent">Free</span></h1>
+        <p>Discover, browse, and stream thousands of movies and TV shows. Powered by open-source scraping — no API keys, no paywalls.</p>
+        <div class="hero-actions">
+          <a href="/home" class="btn-primary">Start Watching</a>
+          <a href="/browse" class="btn-secondary">Browse Content</a>
+        </div>
+      </div>
+    </section>
+
+    {/* Quick Links */}
+    <section class="quick-links container">
+      <a href="/browse?type=movie" class="quick-card">
+        <span class="quick-icon">[M]</span>
+        <h3>Movies</h3>
+        <p>Browse popular, top rated, now playing</p>
+      </a>
+      <a href="/browse?type=tv" class="quick-card">
+        <span class="quick-icon">[T]</span>
+        <h3>TV Shows</h3>
+        <p>Series, seasons, episodes</p>
+      </a>
+      <a href="/watch" class="quick-card">
+        <span class="quick-icon">[P]</span>
+        <h3>Stream</h3>
+        <p>Watch any movie or show</p>
+      </a>
+      <a href="/search" class="quick-card">
+        <span class="quick-icon">[S]</span>
+        <h3>Search</h3>
+        <p>Find anything instantly</p>
+      </a>
+    </section>
+
+    {/* Featured Movies */}
+    {featured.length > 0 && (
+      <section class="featured container">
+        <div class="section-header">
+          <h2>Popular Movies</h2>
+          <a href="/browse?type=movie" class="see-all">See all &rarr;</a>
+        </div>
+        <div class="yt-grid">
+          {featured.slice(0, 12).map((m: any) => (
+            <a href={`/details/${m.id}?type=movie`} class="yt-card">
+              <div class="yt-thumb">
+                {m.poster ? <img src={m.poster} alt={m.title} loading="lazy" /> : <div class="yt-thumb-ph">—</div>}
+                {m.rating > 0 && <span class="yt-rating-badge">{(m.rating / 10).toFixed(1)}</span>}
+              </div>
+              <div class="yt-info">
+                <div class="yt-meta">
+                  <div class="yt-title">{m.title}</div>
+                  <div class="yt-stats">{m.year && <span>{m.year}</span>}{m.rating > 0 && <span> &middot; {(m.rating / 10).toFixed(1)}</span>}</div>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {/* Featured TV */}
+    {featuredTV.length > 0 && (
+      <section class="featured container">
+        <div class="section-header">
+          <h2>Popular TV Shows</h2>
+          <a href="/browse?type=tv" class="see-all">See all &rarr;</a>
+        </div>
+        <div class="yt-grid">
+          {featuredTV.slice(0, 12).map((t: any) => (
+            <a href={`/details/${t.id}?type=tv`} class="yt-card">
+              <div class="yt-thumb">
+                {t.poster ? <img src={t.poster} alt={t.title} loading="lazy" /> : <div class="yt-thumb-ph">—</div>}
+                {t.rating > 0 && <span class="yt-rating-badge">{(t.rating / 10).toFixed(1)}</span>}
+              </div>
+              <div class="yt-info">
+                <div class="yt-meta">
+                  <div class="yt-title">{t.title}</div>
+                  <div class="yt-stats">{t.year && <span>{t.year}</span>}{t.rating > 0 && <span> &middot; {(t.rating / 10).toFixed(1)}</span>}</div>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {/* Footer CTA */}
+    <section class="cta-section">
+      <div class="container cta-inner">
+        <h2>Ready to Stream?</h2>
+        <p>Start watching movies and TV shows right now.</p>
+        <a href="/watch" class="btn-primary">Open Player</a>
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .landing { overflow: hidden; }
+
+  .hero {
+    position: relative;
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    filter: blur(30px) brightness(0.2);
+    transform: scale(1.2);
+  }
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.7) 100%);
+  }
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    padding: 100px 0 80px;
+    max-width: 650px;
+  }
+  .hero-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    background: rgba(255, 45, 85, 0.15);
+    border-radius: var(--radius-xl);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 20px;
+    letter-spacing: 0.5px;
+  }
+  .hero h1 {
+    font-size: 56px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+  .accent { color: var(--accent); }
+  .hero p {
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 32px;
+    max-width: 500px;
+  }
+  .hero-actions { display: flex; gap: 12px; }
+
+  .quick-links {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    padding: 40px 24px;
+  }
+  .quick-card {
+    display: block;
+    padding: 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .quick-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .quick-icon { font-size: 28px; display: block; margin-bottom: 12px; font-family: monospace; }
+  .quick-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .quick-card p { font-size: 13px; color: var(--text-secondary); }
+
+  .featured { padding: 16px 24px 40px; }
+
+  .cta-section {
+    padding: 80px 24px;
+    text-align: center;
+    border-top: 1px solid var(--border);
+  }
+  .cta-inner h2 { font-size: 32px; font-weight: 700; margin-bottom: 12px; }
+  .cta-inner p { font-size: 16px; color: var(--text-secondary); margin-bottom: 24px; }
+
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 36px; }
+    .quick-links { grid-template-columns: repeat(2, 1fr); }
+    .hero-actions { flex-direction: column; }
+  }
+  @media (max-width: 480px) {
+    .quick-links { grid-template-columns: 1fr; }
+  }
+</style>

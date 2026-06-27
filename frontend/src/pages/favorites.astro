@@ -1,0 +1,184 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Favorites">
+  <div class="container favorites-page">
+    <h1>Favorites</h1>
+    <p class="subtitle">Your saved movies and TV shows</p>
+    <div id="favorites-root"></div>
+  </div>
+
+  <script>
+    import { getFavorites, removeFavorite, clearFavorites } from '../lib/favorites';
+
+    function esc(s: string): string {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c));
+    }
+
+    function render() {
+      const root = document.getElementById('favorites-root');
+      if (!root) return;
+
+      const favs = getFavorites();
+
+      if (favs.length === 0) {
+        root.innerHTML = `
+          <div class="empty-state">
+            <span class="empty-icon">[ ]</span>
+            <p>No favorites yet</p>
+            <p style="font-size:13px;margin-top:8px">Start adding movies and TV shows to your favorites list.</p>
+            <a href="/home" class="btn-primary" style="margin-top:16px;display:inline-flex">Browse Content</a>
+          </div>`;
+        return;
+      }
+
+      const movies = favs.filter(f => f.media_type === 'movie');
+      const tv = favs.filter(f => f.media_type === 'tv');
+
+      let html = '';
+
+      if (movies.length > 0) {
+        html += `<div class="section-header"><h2>Movies</h2><span style="color:var(--text-secondary);font-size:14px">${movies.length}</span></div>`;
+        html += '<div class="fav-grid">';
+        for (const m of movies) {
+          html += `
+            <a href="/details/${m.id}?type=movie" class="fav-card">
+              <div class="fav-poster">
+                ${m.poster ? `<img src="${esc(m.poster)}" alt="${esc(m.title)}" loading="lazy" />` : '<div class="ph">—</div>'}
+                <button class="remove-btn" data-id="${m.id}" data-type="movie" aria-label="Remove">✕</button>
+              </div>
+              <div class="fav-info">
+                <h3>${esc(m.title)}</h3>
+                <span>${esc(m.year)}</span>
+              </div>
+            </a>`;
+        }
+        html += '</div>';
+      }
+
+      if (tv.length > 0) {
+        html += `<div class="section-header"><h2>TV Shows</h2><span style="color:var(--text-secondary);font-size:14px">${tv.length}</span></div>`;
+        html += '<div class="fav-grid">';
+        for (const s of tv) {
+          html += `
+            <a href="/details/${s.id}?type=tv" class="fav-card">
+              <div class="fav-poster">
+                ${s.poster ? `<img src="${esc(s.poster)}" alt="${esc(s.title)}" loading="lazy" />` : '<div class="ph">—</div>'}
+                <button class="remove-btn" data-id="${s.id}" data-type="tv" aria-label="Remove">✕</button>
+              </div>
+              <div class="fav-info">
+                <h3>${esc(s.title)}</h3>
+                <span>${esc(s.year)}</span>
+              </div>
+            </a>`;
+        }
+        html += '</div>';
+      }
+
+      html += `<div class="fav-stats">
+        <span>${favs.length} item${favs.length !== 1 ? 's' : ''} saved</span>
+        <button id="clear-all" class="clear-btn">Clear All</button>
+      </div>`;
+
+      root.innerHTML = html;
+
+      root.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = parseInt(btn.getAttribute('data-id') || '');
+          if (isNaN(id)) return;
+          const type = btn.getAttribute('data-type') || '';
+          removeFavorite(id, type);
+          render();
+        });
+      });
+
+      document.getElementById('clear-all')?.addEventListener('click', () => {
+        clearFavorites();
+        render();
+      });
+    }
+
+    render();
+  </script>
+</BaseLayout>
+
+<style>
+  .favorites-page { padding: 24px; }
+  .favorites-page h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+  .subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+
+  .fav-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .fav-card {
+    display: block;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg-card);
+    transition: transform 0.2s;
+  }
+  .fav-card:hover { transform: translateY(-4px); }
+  .fav-poster {
+    position: relative;
+    aspect-ratio: 2/3;
+    overflow: hidden;
+    background: var(--bg-secondary);
+  }
+  .fav-poster img { width: 100%; height: 100%; object-fit: cover; }
+  .ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 48px; }
+  .remove-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .fav-card:hover .remove-btn { opacity: 1; }
+  .remove-btn:focus-visible { opacity: 1; }
+  .remove-btn:hover { background: var(--accent); }
+  .fav-info { padding: 8px 10px; }
+  .fav-info h3 { font-size: 13px; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .fav-info span { font-size: 12px; color: var(--text-secondary); display: block; margin-top: 2px; }
+
+  .fav-stats {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+  .clear-btn {
+    padding: 6px 14px;
+    background: var(--bg-chip);
+    border: none;
+    border-radius: 16px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .clear-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+  .empty-state { text-align: center; padding: 60px 24px; }
+  .empty-icon { font-size: 48px; display: block; margin-bottom: 12px; color: var(--accent); opacity: 0.4; }
+  .empty-state p { color: var(--text-secondary); font-size: 14px; }
+</style>

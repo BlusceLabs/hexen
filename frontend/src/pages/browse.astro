@@ -1,0 +1,145 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPopularMovies, getTopRatedMovies, getNowPlayingMovies, getUpcomingMovies, getPopularTV, getTopRatedTV, getAiringTodayTV, getOnTheAirTV, getMovieGenres, getTVGenres } from '../lib/api';
+
+const type = Astro.url.searchParams.get('type') || 'all';
+
+let movies: any[] = [];
+let tv: any[] = [];
+let movieGenres: any[] = [];
+let tvGenres: any[] = [];
+
+try {
+  if (type === 'all' || type === 'movie') {
+    const [pop, top, now, up] = await Promise.all([getPopularMovies(), getTopRatedMovies(), getNowPlayingMovies(), getUpcomingMovies()]);
+    movies = [...pop, ...top, ...now, ...up];
+    const seen = new Set<number>();
+    movies = movies.filter((m: any) => { if (seen.has(m.id)) return false; seen.add(m.id); return true; });
+  }
+} catch {}
+
+try {
+  if (type === 'all' || type === 'tv') {
+    const [pop, top, air, on] = await Promise.all([getPopularTV(), getTopRatedTV(), getAiringTodayTV(), getOnTheAirTV()]);
+    tv = [...pop, ...top, ...air, ...on];
+    const seen = new Set<number>();
+    tv = tv.filter((t: any) => { if (seen.has(t.id)) return false; seen.add(t.id); return true; });
+  }
+} catch {}
+
+try { movieGenres = await getMovieGenres(); } catch {}
+try { tvGenres = await getTVGenres(); } catch {}
+---
+<BaseLayout title="Browse">
+  <div class="chips-bar">
+    <div class="container">
+      <div class="chips">
+        <a href="/browse?type=all" class={`chip ${type === 'all' ? 'active' : ''}`}>All</a>
+        <a href="/browse?type=movie" class={`chip ${type === 'movie' ? 'active' : ''}`}>Movies</a>
+        <a href="/browse?type=tv" class={`chip ${type === 'tv' ? 'active' : ''}`}>TV Shows</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container browse-content">
+    {movieGenres.length > 0 && (type === 'all' || type === 'movie') && (
+      <section class="genre-section">
+        <div class="section-header">
+          <h2>Movie Genres</h2>
+        </div>
+        <div class="genre-grid">
+          {movieGenres.map((g: any) => (
+            <a href={`/genre?type=movie&id=${g.id}&name=${encodeURIComponent(g.name)}`} class="genre-chip">{g.name}</a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {tvGenres.length > 0 && (type === 'all' || type === 'tv') && (
+      <section class="genre-section">
+        <div class="section-header">
+          <h2>TV Genres</h2>
+        </div>
+        <div class="genre-grid">
+          {tvGenres.map((g: any) => (
+            <a href={`/genre?type=tv&id=${g.id}&name=${encodeURIComponent(g.name)}`} class="genre-chip">{g.name}</a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {movies.length > 0 && (
+      <section class="media-section">
+        <div class="section-header">
+          <h2>Movies</h2>
+          <span class="count">{movies.length} titles</span>
+        </div>
+        <div class="yt-grid">
+          {movies.slice(0, 24).map((m: any) => (
+            <a href={`/details/${m.id}?type=movie`} class="yt-card">
+              <div class="yt-thumb">
+                {m.poster ? <img src={m.poster} alt={m.title} loading="lazy" /> : <div class="yt-thumb-ph">—</div>}
+                {m.rating > 0 && <span class="yt-rating-badge">{(m.rating / 10).toFixed(1)}</span>}
+              </div>
+              <div class="yt-info">
+                <div class="yt-meta">
+                  <div class="yt-title">{m.title}</div>
+                  <div class="yt-stats">
+                    {m.year && <span>{m.year}</span>}
+                    {m.rating > 0 && <span> · {(m.rating / 10).toFixed(1)}</span>}
+                  </div>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {tv.length > 0 && (
+      <section class="media-section">
+        <div class="section-header">
+          <h2>TV Shows</h2>
+          <span class="count">{tv.length} titles</span>
+        </div>
+        <div class="yt-grid">
+          {tv.slice(0, 24).map((t: any) => (
+            <a href={`/details/${t.id}?type=tv`} class="yt-card">
+              <div class="yt-thumb">
+                {t.poster ? <img src={t.poster} alt={t.title} loading="lazy" /> : <div class="yt-thumb-ph">—</div>}
+                {t.rating > 0 && <span class="yt-rating-badge">{(t.rating / 10).toFixed(1)}</span>}
+              </div>
+              <div class="yt-info">
+                <div class="yt-meta">
+                  <div class="yt-title">{t.title}</div>
+                  <div class="yt-stats">
+                    {t.year && <span>{t.year}</span>}
+                    {t.rating > 0 && <span> · {(t.rating / 10).toFixed(1)}</span>}
+                  </div>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {movies.length === 0 && tv.length === 0 && (
+      <div class="empty-state">
+        <span class="empty-icon">[ ]</span>
+        <p>Nothing to browse right now.</p>
+      </div>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+  .chips-bar { border-bottom: 1px solid var(--border); position: sticky; top: var(--nav-height); background: var(--bg-primary); z-index: 80; }
+  .browse-content { padding: 8px 24px 40px; }
+  .genre-section { margin-bottom: 32px; }
+  .genre-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .genre-chip { padding: 6px 16px; background: var(--bg-chip); border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--text-chip); transition: background 0.2s; }
+  .genre-chip:hover { background: var(--bg-hover); }
+  .media-section { margin-bottom: 40px; }
+  .count { font-size: 14px; color: var(--text-secondary); }
+</style>
