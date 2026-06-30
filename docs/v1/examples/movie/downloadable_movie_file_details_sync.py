@@ -29,10 +29,6 @@ def downloadable_movie_file_details():
 
     print(type(downloadable_files_detail))  # (2)
 
-    subtitles = downloadable_files_detail.captions
-
-    videos = downloadable_files_detail.downloads
-
 
 if __name__ == "__main__":
     downloadable_movie_file_details()

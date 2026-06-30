@@ -8,13 +8,9 @@ import re
 import typing as t
 from dataclasses import dataclass
 from math import ceil, floor
-from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse, urljoin
+from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
 
 import httpx
-
-from hexenapi.utils import get_event_loop
-
-logger = logging.getLogger(__name__)
 
 from hexenapi.backend.constants import (
     DEFAULT_DUB_LANGUAGE_NAME_OR_CODE,
@@ -29,6 +25,9 @@ from hexenapi.backend.models.details import (
     RootItemDetailsModel,
     SeasonItemModel,
 )
+from hexenapi.utils import get_event_loop
+
+logger = logging.getLogger(__name__)
 
 FILE_EXT_PATTERN = re.compile(r".+\.(\w+)\?.+")
 
@@ -73,7 +72,7 @@ def assert_membership(value: t.Any, elements: t.Iterable, identity="Value"):
 
 def assert_instance(
     obj: object, class_or_tuple, name: str = "Parameter"
-) -> t.NoReturn:
+) -> None:
     """assert obj an instance of class_or_tuple"""
 
     assert isinstance(obj, class_or_tuple), (
@@ -178,9 +177,9 @@ def validate_subject_id(subject_id: str) -> bool:
 
 
 def validate_per_page_and_raise(per_page: int) -> None:
-    assert 0 < per_page <= SEARCH_PER_PAGE_LIMIT, (
-        f"per_page value {per_page} is NOT between 0 and {SEARCH_PER_PAGE_LIMIT}"
-    )
+    assert (
+        0 < per_page <= SEARCH_PER_PAGE_LIMIT
+    ), f"per_page value {per_page} is NOT between 0 and {SEARCH_PER_PAGE_LIMIT}"
 
 
 def validate_genre_top_id(value: str) -> bool:
@@ -234,9 +233,7 @@ def get_download_tv_series_request_params(
 
     total_episodes = get_episodes_amount(seasons)
     seasons_before = [s for s in seasons if s.season_number < season]
-    offset_episodes = get_episodes_amount(seasons_before) + (
-        episode - 1
-    )
+    offset_episodes = get_episodes_amount(seasons_before) + (episode - 1)
     available_episodes = total_episodes - offset_episodes
 
     if limit != -1 and limit > available_episodes:

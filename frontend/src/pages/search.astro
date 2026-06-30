@@ -1,16 +1,128 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import SearchPage from '../components/SearchPage.svelte';
-import { searchMulti } from '../lib/api';
+import DefaultLayout from '@/layouts/DefaultLayout.astro';
+import PosterCard from '@/components/media/PosterCard.astro';
+import Pagination from '@/components/ui/Pagination.svelte';
+import Skeleton from '@/components/ui/Skeleton.astro';
+import { api, ApiError } from '@/lib/api/client';
+import type { SearchResult, Paged } from '@/lib/api/types';
+import { posterUrl, profileUrl } from '@/lib/utils/image';
+import { formatYear } from '@/lib/utils/format';
 
-const query = Astro.url.searchParams.get('q') || '';
-let results: any[] = [];
-let error = false;
+const params = Astro.url.searchParams;
+const q = params.get('q') || '';
+const type = (params.get('type') as 'multi' | 'movie' | 'tv' | 'person') || 'multi';
+const page = Math.max(1, parseInt(params.get('page') || '1'));
 
-if (query) {
-  try { results = await searchMulti(query); } catch { error = true; }
+const typeTabs = [
+  { value: 'multi', label: 'All' },
+  { value: 'movie', label: 'Movies' },
+  { value: 'tv', label: 'TV Shows' },
+  { value: 'person', label: 'People' },
+] as const;
+
+let data: Paged<SearchResult> | null = null;
+let errorMsg = '';
+
+if (q) {
+  try {
+    if (type === 'multi') data = await api.searchMulti(q, page);
+    else if (type === 'movie') data = await api.searchMovie(q, page) as Paged<SearchResult>;
+    else if (type === 'tv') data = await api.searchTv(q, page) as Paged<SearchResult>;
+    else if (type === 'person') data = await api.searchPerson(q, page) as Paged<SearchResult>;
+  } catch (e) {
+    errorMsg = e instanceof ApiError ? e.message : 'Search failed';
+  }
+}
+
+function hrefFor(r: SearchResult): string {
+  return r.media_type === 'tv' ? `/tv/${r.id}` : r.media_type === 'person' ? `/person/${r.id}` : `/movies/${r.id}`;
+}
+function titleFor(r: SearchResult): string {
+  return r.title ?? r.name ?? 'Untitled';
+}
+function imgFor(r: SearchResult): string | null {
+  return posterUrl(r.poster_path, 'w185') ?? profileUrl(r.profile_path, 'w185');
 }
 ---
-<BaseLayout title={query ? `Search: ${query}` : 'Search'}>
-  <SearchPage initialQuery={query} initialResults={results} initialError={error} client:load />
-</BaseLayout>
+<DefaultLayout title={q ? `Search: ${q} — Hexen` : 'Search — Hexen'} description="Search for movies, TV shows, and people.">
+  <div class="container-content py-8">
+    <h1 class="text-3xl font-extrabold">Search</h1>
+
+    <form class="mt-4 flex gap-2" method="get" action="/search">
+      <input type="text" name="q" value={q} placeholder="Search movies, TV, people…" class="input flex-1" autocomplete="off" />
+      <button type="submit" class="btn-primary">Search</button>
+    </form>
+
+    {q && (
+      <div class="mt-4 flex flex-wrap gap-2">
+        {typeTabs.map((t) => (
+          <a
+            href={`/search?q=${encodeURIComponent(q)}&type=${t.value}`}
+            class:list={["chip", type === t.value && 'chip-active']}
+          >{t.label}</a>
+        ))}
+      </div>
+    )}
+
+    {!q ? (
+      <div class="py-16 text-center">
+        <p class="text-lg text-ink-secondary">Start typing to search.</p>
+        <div class="mt-6 flex flex-wrap justify-center gap-2">
+          {['Avatar', 'Breaking Bad', 'Inception', 'Marvel', 'Studio Ghibli'].map((s) => (
+            <a href={`/search?q=${encodeURIComponent(s)}`} class="chip hover:chip-active">{s}</a>
+          ))}
+        </div>
+      </div>
+    ) : errorMsg ? (
+      <div class="mt-8 rounded-lg border border-red-500/30 bg-red-500/10 p-6 text-center">
+        <p class="text-red-400">{errorMsg}</p>
+      </div>
+    ) : data ? (
+      <>
+        <p class="mt-4 text-sm text-ink-secondary">
+          {data.total_results.toLocaleString()} results for "{q}"
+        </p>
+
+        {data.results.length === 0 ? (
+          <div class="py-16 text-center">
+            <p class="text-ink-secondary">No results found. Try different keywords.</p>
+          </div>
+        ) : type === 'person' ? (
+          <div class="poster-grid mt-4">
+            {data.results.map((r) => (
+              <a href={`/person/${r.id}`} class="group block overflow-hidden rounded-lg bg-base-surface shadow-md transition-transform hover:scale-105">
+                <div class="relative aspect-[2/3] overflow-hidden bg-base-elevated">
+                  {profileUrl(r.profile_path, 'w342') ? (
+                    <img src={profileUrl(r.profile_path, 'w342')!} alt={r.name ?? ''} class="h-full w-full object-cover" loading="lazy" />
+                  ) : (
+                    <div class="flex h-full w-full items-center justify-center text-3xl text-ink-secondary">{(r.name ?? '?').charAt(0)}</div>
+                  )}
+                </div>
+                <div class="p-2.5">
+                  <p class="truncate text-sm font-medium">{r.name}</p>
+                  {r.known_for_department && <p class="text-xs text-ink-secondary">{r.known_for_department}</p>}
+                </div>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div class="poster-grid mt-4">
+            {data.results.map((r) => (
+              <PosterCard item={r} type={r.media_type} />
+            ))}
+          </div>
+        )}
+
+        <Pagination
+          client:visible
+          page={data.page}
+          totalPages={Math.min(data.total_pages, 500)}
+          basePath="/search"
+          searchParams={{ q, type }}
+        />
+      </>
+    ) : (
+      <div class="mt-8"><Skeleton count={12} /></div>
+    )}
+  </div>
+</DefaultLayout>

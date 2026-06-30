@@ -1,10 +1,10 @@
 import pytest
 
+from hexenapi.v2._web_models import SearchResultsModel
 from hexenapi.v2.core import (
     Search,
     SubjectType,
 )
-from hexenapi.v2._web_models import SearchResultsModel
 from hexenapi.v2.requests import Session
 from tests.v2 import init_search
 
@@ -17,7 +17,7 @@ from tests.v2 import init_search
         [SubjectType.TV_SERIES],
         [SubjectType.MUSIC],
         [SubjectType.EDUCATION],
-       # [SubjectType.ANIME],
+        # [SubjectType.ANIME],
     ),
 )
 def test_get_content_and_model(subject_type: SubjectType):

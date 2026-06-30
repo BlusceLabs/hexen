@@ -1,10 +1,10 @@
 import pytest
 
+from hexenapi.v2._web_models import SearchResultsModel
 from hexenapi.v2.core import (
     Search,
     SubjectType,
 )
-from hexenapi.v2._web_models import SearchResultsModel
 from hexenapi.v2.requests import Session
 from tests.v2 import init_search
 

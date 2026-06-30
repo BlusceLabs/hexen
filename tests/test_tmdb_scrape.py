@@ -20,7 +20,6 @@ from hexenapi.backend.tmdb.client import (
     extract_watch_providers,
 )
 
-
 # ---------------------------------------------------------------------------
 # Sample HTML fixtures (mimics real TMDB page structure)
 # ---------------------------------------------------------------------------
@@ -51,7 +50,8 @@ MOVIE_DETAIL_HTML = """
 """
 
 IMAGES_HTML = """
-<img src="https://image.tmdb.org/t/p/original/mnPy0uGoDmP3ejd0EeR7oyXDnGh.svg" class="logo">
+<img src="https://image.tmdb.org/t/p/original/mnPy0uGoDmP3ejd0EeR7oyXDnGh.svg"
+ class="logo">
 <img src="https://image.tmdb.org/t/p/original/fc_logo.png" class="logo">
 <img src="https://image.tmdb.org/t/p/w1280/backdrop1.jpg">
 <img src="https://image.tmdb.org/t/p/w780/poster1.jpg">
@@ -59,23 +59,34 @@ IMAGES_HTML = """
 """
 
 VIDEOS_HTML = """
-<div data-video-key="SzW9jbweXFU" data-video-type="Trailer"><p>Fight Club Trailer</p></div>
-<div data-video-key="QT4CGcC3RQo" data-video-type="Teaser"><p>Fight Club Teaser</p></div>
-<div data-video-key="abc123xyz" data-video-type="Clip"><p>Opening Scene</p></div>
+<div data-video-key="SzW9jbweXFU" data-video-type="Trailer">
+<p>Fight Club Trailer</p></div>
+<div data-video-key="QT4CGcC3RQo" data-video-type="Teaser">
+<p>Fight Club Teaser</p></div>
+<div data-video-key="abc123xyz" data-video-type="Clip">
+<p>Opening Scene</p></div>
 <iframe src="https://www.youtube.com/embed/SzW9jbweXFU"></iframe>
 """
 
 CAST_HTML = """
 <a href="/person/128-brad-pitt"><p>Brad Pitt</p></a> <p>Tyler Durden</p>
-<a href="/person/819-edward-norton"><p>Edward Norton</p></a> <p>The Narrator</p>
-<a href="/person/1282-helena-bonham-carter"><p>Helena Bonham Carter</p></a> <p>Marla Singer</p>
-<a href="/person/7623-meat-loaf"><p>Meat Loaf</p></a> <p>Robert Paulson</p>
+<a href="/person/819-edward-norton"><p>Edward Norton</p></a>
+<p>The Narrator</p>
+<a href="/person/1282-helena-bonham-carter">
+<p>Helena Bonham Carter</p></a> <p>Marla Singer</p>
+<a href="/person/7623-meat-loaf"><p>Meat Loaf</p></a>
+<p>Robert Paulson</p>
 """
 
 REVIEWS_HTML = """
-<h3>CinemaFan42</h3><p>One of the greatest films ever made. The twist is mind-blowing.</p><span>9 / 10</span>
-<h3>MovieBuff99</h3><p>Fincher at his absolute best. Norton and Pitt deliver.</p><span>10 / 10</span>
-<h3>FilmCritic2000</h3><p>Overrated but visually stunning.</p><span>7 / 10</span>
+<h3>CinemaFan42</h3>
+<p>One of the greatest films ever made. The twist is mind-blowing.</p>
+<span>9 / 10</span>
+<h3>MovieBuff99</h3>
+<p>Fincher at his absolute best. Norton and Pitt deliver.</p>
+<span>10 / 10</span>
+<h3>FilmCritic2000</h3><p>Overrated but visually stunning.</p>
+<span>7 / 10</span>
 """
 
 TRANSLATIONS_HTML = """
@@ -169,7 +180,7 @@ def test_movie_details():
 def test_images():
     imgs = extract_images(IMAGES_HTML)
     assert len(imgs["logos"]) >= 2
-    assert any(".svg" in l["file_path"] for l in imgs["logos"])
+    assert any(".svg" in logo["file_path"] for logo in imgs["logos"])
     assert len(imgs["posters"]) >= 1
 
 

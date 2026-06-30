@@ -6,8 +6,8 @@ This module re-exports everything for backwards compatibility.
 
 import logging
 
-logger = logging.getLogger(__name__)
+from hexenapi.v2.crypto import *  # noqa: F403
+from hexenapi.v2.http_client import MovieBoxHttpClient
+from hexenapi.v2.urls import *  # noqa: F403
 
-from hexenapi.v2.http_client import MovieBoxHttpClient  # noqa: F401
-from hexenapi.v2.crypto import *  # noqa: F401, F403
-from hexenapi.v2.urls import *  # noqa: F401, F403
+logger = logging.getLogger(__name__)

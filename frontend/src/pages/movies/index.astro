@@ -1,0 +1,71 @@
+---
+import DefaultLayout from '@/layouts/DefaultLayout.astro';
+import PosterCard from '@/components/media/PosterCard.astro';
+import Pagination from '@/components/ui/Pagination.svelte';
+import Skeleton from '@/components/ui/Skeleton.astro';
+import { api, ApiError } from '@/lib/api/client';
+import type { Movie, Paged } from '@/lib/api/types';
+
+const tabs = [
+  { action: 'popular', label: 'Popular' },
+  { action: 'top_rated', label: 'Top Rated' },
+  { action: 'now_playing', label: 'Now Playing' },
+  { action: 'upcoming', label: 'Upcoming' },
+] as const;
+
+const { action = 'popular', page = '1' } = Astro.url.query;
+const currentAction = tabs.some(t => t.action === action) ? action : 'popular';
+const currentPage = Math.max(1, parseInt(page) || 1);
+
+let data: Paged<Movie> | null = null;
+let errorMsg = '';
+try {
+  data = await api.movieList(currentAction as any, currentPage);
+} catch (e) {
+  errorMsg = e instanceof ApiError ? e.message : 'Failed to load movies';
+}
+
+const activeTab = tabs.find(t => t.action === currentAction)!;
+const { pathname } = Astro.url;
+---
+<DefaultLayout title="Hexen — Movies" description="Browse popular, top rated, now playing, and upcoming movies.">
+  <div class="container-content py-8">
+    <h1 class="text-3xl font-extrabold">Movies</h1>
+    <p class="mt-1 text-ink-secondary">Browse {activeTab.label.toLowerCase()} movies</p>
+
+    <div class="mt-6 flex flex-wrap gap-2">
+      {tabs.map((t) => (
+        <a
+          href={`/movies?action=${t.action}&page=1`}
+          class:list={["chip", t.action === currentAction && "chip-active"]}
+        >
+          {t.label}
+        </a>
+      ))}
+    </div>
+
+    {errorMsg ? (
+      <div class="mt-8 rounded-lg border border-red-500/30 bg-red-500/10 p-6 text-center">
+        <p class="text-red-400">{errorMsg}</p>
+        <p class="mt-2 text-sm text-ink-secondary">Is the backend running on {import.meta.env.PUBLIC_API_BASE ?? 'http://localhost:8000'}?</p>
+      </div>
+    ) : data ? (
+      <>
+        <div class="poster-grid mt-8">
+          {data.results.map((m) => (
+            <PosterCard item={m} type="movie" />
+          ))}
+        </div>
+        <Pagination
+          client:visible
+          page={data.page}
+          totalPages={Math.min(data.total_pages, 500)}
+          basePath="/movies"
+          searchParams={{ action: currentAction }}
+        />
+      </>
+    ) : (
+      <div class="mt-8"><Skeleton count={18} /></div>
+    )}
+  </div>
+</DefaultLayout>

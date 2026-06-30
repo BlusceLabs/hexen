@@ -49,8 +49,8 @@ async def test_fetching_downloadable_caption_file_details(subject_id):
         for index, target_video in enumerate(downloadable_videos.list):
             caption_details = await caption_details_inst.get_content_model(
                 subject_id,
-                resource=target_video
-                if index % 2 == 0
-                else target_video.resource_id,
+                resource=(
+                    target_video if index % 2 == 0 else target_video.resource_id
+                ),
             )
             assert isinstance(caption_details, RootCaptionFileMetadata)

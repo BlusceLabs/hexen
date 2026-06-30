@@ -8,14 +8,14 @@ Consider consolidating these into a single module in a future refactor.
 
 from abc import ABCMeta
 
+from hexenapi.backend._web_models import SearchResultsItem
+from hexenapi.backend.constants import SubjectType
+from hexenapi.backend.helpers import get_absolute_url
+from hexenapi.backend.requests import Session
 from hexenapi.v1._bases import BaseContentProviderAndHelper
 from hexenapi.v1.download import CaptionFileDownloader, MediaFileDownloader
 from hexenapi.v1.helpers import assert_instance
 from hexenapi.v1.models import DownloadableFilesMetadata
-from hexenapi.backend.constants import SubjectType
-from hexenapi.backend.helpers import get_absolute_url
-from hexenapi.backend._web_models import SearchResultsItem
-from hexenapi.backend.requests import Session
 
 __all__ = [
     "CaptionFileDownloader",

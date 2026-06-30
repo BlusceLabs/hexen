@@ -483,10 +483,11 @@ class JsonDetailsExtractorModel:
         return ItemJsonDetailsModel(**contents)
 
     @property
-    def data(self) -> ResDataModel:
+    def resData(self):
         """Key data resources
 
-        Contains key data such as `metadata`, `stars`, `reviews`, `resource.seasons`, `subject` etc
+        Contains key data such as `metadata`, `stars`, `reviews`,
+        `resource.seasons`, `subject` etc
 
         - Shortcut for `self.details.resData`
         """

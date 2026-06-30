@@ -21,6 +21,7 @@ Usage::
 
 from hexenapi.backend.tmdb.client import TMDBClient
 from hexenapi.backend.tmdb.endpoints import (
+    TV,
     Account,
     Authentication,
     Collections,
@@ -35,10 +36,9 @@ from hexenapi.backend.tmdb.endpoints import (
     Networks,
     People,
     Search,
-    TVEpisode,
-    TV,
-    TVSeason,
     Trending,
+    TVEpisode,
+    TVSeason,
     WatchProviders,
 )
 

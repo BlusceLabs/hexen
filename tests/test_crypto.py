@@ -36,10 +36,10 @@ def test_generate_x_client_token():
     assert len(parts) == 2
     assert parts[0] == "1234567890000"
     # Second part should be md5 of reversed timestamp
-    assert parts[1] == md5_hex("000987654321".encode())
-
+    assert parts[1] == md5_hex(b"0000987654321")
 
 def test_generate_x_client_token_no_args():
+    token = generate_x_client_token()
     token = generate_x_client_token()
     parts = token.split(",")
     assert len(parts) == 2

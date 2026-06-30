@@ -61,6 +61,7 @@ class TMDBClient:
 
     def get_sync(self, path: str) -> str:
         import asyncio
+
         return asyncio.run(self.get_html(path))
 
 
@@ -115,13 +116,13 @@ def _extract_extra_fields(html: str) -> dict:
         r'<div[^>]*class="[^"]*overview[^"]*">\s*<p[^>]*>(.*?)</p>', html, re.S
     )
     if m:
-        data["overview"] = re.sub(r'<[^>]+>', '', m.group(1)).strip()
+        data["overview"] = re.sub(r"<[^>]+>", "", m.group(1)).strip()
 
-    m = re.search(r'Tagline</h3>\s*<p[^>]*>(.*?)</p>', html, re.S)
+    m = re.search(r"Tagline</h3>\s*<p[^>]*>(.*?)</p>", html, re.S)
     if m:
-        data["tagline"] = re.sub(r'<[^>]+>', '', m.group(1)).strip()
+        data["tagline"] = re.sub(r"<[^>]+>", "", m.group(1)).strip()
 
-    imdb = re.search(r'imdb\.com/title/(tt\d+)', html)
+    imdb = re.search(r"imdb\.com/title/(tt\d+)", html)
     if imdb:
         data["imdb_id"] = imdb.group(1)
 
@@ -144,12 +145,14 @@ def _extract_extra_fields(html: str) -> dict:
     # Alternative titles
     alt_titles = []
     for m in re.finditer(
-        r'<td[^>]*>\s*(\w{2})\s*</td>\s*<td[^>]*>(.*?)</td>', html, re.S
+        r"<td[^>]*>\s*(\w{2})\s*</td>\s*<td[^>]*>(.*?)</td>", html, re.S
     ):
-        alt_titles.append({
-            "iso_3166_1": m.group(1),
-            "title": re.sub(r'<[^>]+>', '', m.group(2)).strip(),
-        })
+        alt_titles.append(
+            {
+                "iso_3166_1": m.group(1),
+                "title": re.sub(r"<[^>]+>", "", m.group(2)).strip(),
+            }
+        )
     if alt_titles:
         data["alternative_titles"] = alt_titles
 
@@ -160,13 +163,17 @@ def extract_images(html: str) -> dict:
     logos, backdrops, posters = [], [], []
     seen = set()
     # First pass: find images explicitly marked with class="logo"
-    for m in re.finditer(r'<img[^>]*src="([^"]+)"[^>]*class="[^"]*logo[^"]*"', html):
+    for m in re.finditer(
+        r'<img[^>]*src="([^"]+)"[^>]*class="[^"]*logo[^"]*"', html
+    ):
         path = m.group(1)
         fp = path.split("/t/p/")[-1] if "/t/p/" in path else path
         if fp not in seen:
             seen.add(fp)
             logos.append({"file_path": fp, "url": path})
-    for m in re.finditer(r'<img[^>]*class="[^"]*logo[^"]*"[^>]*src="([^"]+)"', html):
+    for m in re.finditer(
+        r'<img[^>]*class="[^"]*logo[^"]*"[^>]*src="([^"]+)"', html
+    ):
         path = m.group(1)
         fp = path.split("/t/p/")[-1] if "/t/p/" in path else path
         if fp not in seen:
@@ -174,17 +181,19 @@ def extract_images(html: str) -> dict:
             logos.append({"file_path": fp, "url": path})
 
     # Second pass: all images on the page
-    for m in re.finditer(r'<img[^>]*src="(https://image\.tmdb\.org/t/p/[^"]+)"', html):
+    for m in re.finditer(
+        r'<img[^>]*src="(https://image\.tmdb\.org/t/p/[^"]+)"', html
+    ):
         path = m.group(1)
         fp = path.split("/t/p/", 1)[-1] if "/t/p/" in path else path
         if fp in seen:
             continue
         seen.add(fp)
-        context = html[max(0, m.start() - 300):m.start()]
+        context = html[max(0, m.start() - 300) : m.start()]
         entry = {"file_path": fp, "url": path}
         if fp.endswith((".svg",)):
             logos.append(entry)
-        elif "poster" in context.lower() or re.search(r'/w\d{2,3}/', path):
+        elif "poster" in context.lower() or re.search(r"/w\d{2,3}/", path):
             posters.append(entry)
         else:
             backdrops.append(entry)
@@ -201,10 +210,12 @@ def extract_videos(html: str) -> list[dict]:
         if key in seen:
             continue
         seen.add(key)
-        after = html[m.end():m.end() + 300]
-        name_m = re.search(r'<p[^>]*>(.*?)</p>', after, re.S)
-        name = re.sub(r'<[^>]+>', '', name_m.group(1)).strip() if name_m else ""
-        videos.append({"key": key, "type": m.group(2), "name": name, "site": "YouTube"})
+        after = html[m.end() : m.end() + 300]
+        name_m = re.search(r"<p[^>]*>(.*?)</p>", after, re.S)
+        name = re.sub(r"<[^>]+>", "", name_m.group(1)).strip() if name_m else ""
+        videos.append(
+            {"key": key, "type": m.group(2), "name": name, "site": "YouTube"}
+        )
     for m in re.finditer(r'youtube\.com/embed/([^"?&]+)', html):
         key = m.group(1)
         if key not in seen:
@@ -218,37 +229,48 @@ def extract_cast(html: str) -> list[dict]:
     seen = set()
     for m in re.finditer(
         r'<a[^>]*href="(/person/(\d+)-([^"]+))"[^>]*>\s*(?:<[^>]*>)*\s*'
-        r'(?:<p[^>]*>|<bdi[^>]*>)(.*?)</(?:p|bdi)>',
-        html, re.S,
+        r"(?:<p[^>]*>|<bdi[^>]*>)(.*?)</(?:p|bdi)>",
+        html,
+        re.S,
     ):
         pid = int(m.group(2))
         if pid in seen:
             continue
         seen.add(pid)
-        after = html[m.end():m.end() + 500]
+        after = html[m.end() : m.end() + 500]
         char_m = re.search(
-            r'(?:class="[^"]*character[^"]*"[^>]*>|>\s*)(.*?)</(?:p|td|div)', after, re.S
+            r'(?:class="[^"]*character[^"]*"[^>]*>|>\s*)(.*?)</(?:p|td|div)',
+            after,
+            re.S,
         )
-        character = re.sub(r'<[^>]+>', '', char_m.group(1)).strip() if char_m else ""
-        cast.append({
-            "id": pid,
-            "url": m.group(1),
-            "name": re.sub(r'<[^>]+>', '', m.group(4)).strip(),
-            "character": character,
-        })
+        character = (
+            re.sub(r"<[^>]+>", "", char_m.group(1)).strip() if char_m else ""
+        )
+        cast.append(
+            {
+                "id": pid,
+                "url": m.group(1),
+                "name": re.sub(r"<[^>]+>", "", m.group(4)).strip(),
+                "character": character,
+            }
+        )
     return cast
 
 
 def extract_reviews(html: str) -> list[dict]:
     reviews = []
-    for m in re.finditer(r'<h3[^>]*>(.*?)</h3>', html, re.S):
-        author = re.sub(r'<[^>]+>', '', m.group(1)).strip()
+    for m in re.finditer(r"<h3[^>]*>(.*?)</h3>", html, re.S):
+        author = re.sub(r"<[^>]+>", "", m.group(1)).strip()
         if not author or len(author) > 60:
             continue
-        after = html[m.end():m.end() + 2000]
-        content_m = re.search(r'<p[^>]*>(.*?)</p>', after, re.S)
-        content = re.sub(r'<[^>]+>', '', content_m.group(1)).strip() if content_m else ""
-        rating_m = re.search(r'(\d+(?:\.\d+)?)\s*/\s*10', after[:500])
+        after = html[m.end() : m.end() + 2000]
+        content_m = re.search(r"<p[^>]*>(.*?)</p>", after, re.S)
+        content = (
+            re.sub(r"<[^>]+>", "", content_m.group(1)).strip()
+            if content_m
+            else ""
+        )
+        rating_m = re.search(r"(\d+(?:\.\d+)?)\s*/\s*10", after[:500])
         rating = float(rating_m.group(1)) if rating_m else None
         reviews.append({"author": author, "content": content, "rating": rating})
     return reviews
@@ -257,14 +279,17 @@ def extract_reviews(html: str) -> list[dict]:
 def extract_translations(html: str) -> list[dict]:
     translations = []
     for m in re.finditer(
-        r'<td[^>]*>\s*(\w{2})\s*</td>\s*<td[^>]*>(.*?)</td>\s*<td[^>]*>(.*?)</td>',
-        html, re.S,
+        r"<td[^>]*>\s*(\w{2})\s*</td>\s*<td[^>]*>(.*?)</td>\s*<td[^>]*>(.*?)</td>",
+        html,
+        re.S,
     ):
-        translations.append({
-            "iso_639_1": m.group(1),
-            "name": re.sub(r'<[^>]+>', '', m.group(2)).strip(),
-            "english_name": re.sub(r'<[^>]+>', '', m.group(3)).strip(),
-        })
+        translations.append(
+            {
+                "iso_639_1": m.group(1),
+                "name": re.sub(r"<[^>]+>", "", m.group(2)).strip(),
+                "english_name": re.sub(r"<[^>]+>", "", m.group(3)).strip(),
+            }
+        )
     return translations
 
 
@@ -272,7 +297,7 @@ def extract_watch_providers(html: str) -> dict[str, list[dict]]:
     providers: dict[str, list[dict]] = {}
     for region_m in re.finditer(r'data-region="(\w+)"', html):
         region = region_m.group(1)
-        after = html[region_m.end():region_m.end() + 5000]
+        after = html[region_m.end() : region_m.end() + 5000]
         items = []
         for pm in re.finditer(
             r'title="([^"]+)"[^>]*>.*?<img[^>]*src="([^"]+)"', after, re.S
@@ -286,21 +311,24 @@ def extract_watch_providers(html: str) -> dict[str, list[dict]]:
 def extract_release_dates(html: str) -> list[dict]:
     dates = []
     for m in re.finditer(
-        r'<td[^>]*>([\w\s]+?)</td>\s*<td[^>]*>(.*?)</td>\s*<td[^>]*>(.*?)</td>',
-        html, re.S,
+        r"<td[^>]*>([\w\s]+?)</td>\s*<td[^>]*>(.*?)</td>\s*<td[^>]*>(.*?)</td>",
+        html,
+        re.S,
     ):
-        dates.append({
-            "country": m.group(1).strip(),
-            "certification": re.sub(r'<[^>]+>', '', m.group(2)).strip(),
-            "release_date": re.sub(r'<[^>]+>', '', m.group(3)).strip(),
-        })
+        dates.append(
+            {
+                "country": m.group(1).strip(),
+                "certification": re.sub(r"<[^>]+>", "", m.group(2)).strip(),
+                "release_date": re.sub(r"<[^>]+>", "", m.group(3)).strip(),
+            }
+        )
     return dates
 
 
 def extract_list_items(html: str, media_type: str = "movie") -> list[dict]:
     results = []
     seen = set()
-    pattern = rf'/{media_type}/(\d+)-'
+    pattern = rf"/{media_type}/(\d+)-"
     for mid in re.findall(pattern, html):
         if mid not in seen:
             seen.add(mid)
@@ -316,12 +344,27 @@ def extract_search_results(html: str) -> list[dict]:
         if mid in seen_ids:
             continue
         seen_ids.add(mid)
-        media_type = "movie" if "/movie/" in m.group(1) else "tv" if "/tv/" in m.group(1) else "person"
-        after = html[m.end():m.end() + 300]
-        title_m = re.search(r'(?:<bdi[^>]*>|<span[^>]*>)(.*?)</(?:bdi|span)>', after, re.S)
-        title = re.sub(r'<[^>]+>', '', title_m.group(1)).strip() if title_m else m.group(3).replace("-", " ").title()
-        item: dict[str, Any] = {"id": mid, "url": m.group(1), "media_type": media_type, "title": title}
-        year_m = re.search(r'\((\d{4})\)', after)
+        media_type = (
+            "movie"
+            if "/movie/" in m.group(1)
+            else "tv" if "/tv/" in m.group(1) else "person"
+        )
+        after = html[m.end() : m.end() + 300]
+        title_m = re.search(
+            r"(?:<bdi[^>]*>|<span[^>]*>)(.*?)</(?:bdi|span)>", after, re.S
+        )
+        title = (
+            re.sub(r"<[^>]+>", "", title_m.group(1)).strip()
+            if title_m
+            else m.group(3).replace("-", " ").title()
+        )
+        item: dict[str, Any] = {
+            "id": mid,
+            "url": m.group(1),
+            "media_type": media_type,
+            "title": title,
+        }
+        year_m = re.search(r"\((\d{4})\)", after)
         if year_m:
             item["year"] = int(year_m.group(1))
         poster_m = re.search(r'(https://image\.tmdb\.org/t/p/[^"\']+)', after)
@@ -338,18 +381,24 @@ def extract_collection_parts(html: str) -> list[dict]:
         mid = m.group(1)
         if mid not in seen:
             seen.add(mid)
-            parts.append({"id": int(mid), "title": m.group(2).replace("-", " ").title()})
+            parts.append(
+                {"id": int(mid), "title": m.group(2).replace("-", " ").title()}
+            )
     return parts
 
 
 def extract_configuration(html: str) -> dict:
     data: dict[str, Any] = {}
-    m = re.search(r'images\.tmdb\.org', html)
+    m = re.search(r"images\.tmdb\.org", html)
     if m:
         data["image_base_url"] = "https://image.tmdb.org/t/p"
-    sizes = re.findall(r'(?:w\d+|original|square_\w+)', html)
+    sizes = re.findall(r"(?:w\d+|original|square_\w+)", html)
     if sizes:
-        data["poster_sizes"] = list(dict.fromkeys([s for s in sizes if s.startswith("w") or s == "original"]))
+        data["poster_sizes"] = list(
+            dict.fromkeys(
+                [s for s in sizes if s.startswith("w") or s == "original"]
+            )
+        )
     return data
 
 
@@ -360,19 +409,21 @@ def extract_genres(html: str) -> list[dict]:
         gid = m.group(1)
         if gid not in seen:
             seen.add(gid)
-            genres.append({"id": int(gid), "name": m.group(2).replace("-", " ").title()})
+            genres.append(
+                {"id": int(gid), "name": m.group(2).replace("-", " ").title()}
+            )
     return genres
 
 
 def extract_account_states(html: str) -> dict:
     data: dict[str, Any] = {}
-    m = re.search(r'rated.*?(\d+\.?\d*)', html, re.S)
+    m = re.search(r"rated.*?(\d+\.?\d*)", html, re.S)
     if m:
         data["rated"] = float(m.group(1))
-    m = re.search(r'watchlist.*?true', html, re.S)
+    m = re.search(r"watchlist.*?true", html, re.S)
     if m:
         data["watchlist"] = True
-    m = re.search(r'favorite.*?true', html, re.S)
+    m = re.search(r"favorite.*?true", html, re.S)
     if m:
         data["favorite"] = True
     return data
@@ -380,6 +431,13 @@ def extract_account_states(html: str) -> dict:
 
 def extract_changes(html: str) -> list[dict]:
     changes = []
-    for m in re.finditer(r'<time[^>]*datetime="([^"]+)"[^>]*>(.*?)</time>', html, re.S):
-        changes.append({"date": m.group(1), "label": re.sub(r'<[^>]+>', '', m.group(2)).strip()})
+    for m in re.finditer(
+        r'<time[^>]*datetime="([^"]+)"[^>]*>(.*?)</time>', html, re.S
+    ):
+        changes.append(
+            {
+                "date": m.group(1),
+                "label": re.sub(r"<[^>]+>", "", m.group(2)).strip(),
+            }
+        )
     return changes

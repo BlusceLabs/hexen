@@ -1,0 +1,19 @@
+---
+const year = new Date().getFullYear();
+---
+<footer class="mt-16 border-t border-base-border bg-base-surface">
+  <div class="container-content py-8">
+    <div class="flex flex-col items-center justify-between gap-4 text-sm text-ink-secondary sm:flex-row">
+      <div class="flex items-center gap-2">
+        <span class="text-accent">▶</span>
+        <span class="font-semibold text-ink-primary">Hexen</span>
+        <span>· TMDB + Moviebox</span>
+      </div>
+      <p class="text-center sm:text-right">
+        All videos and pictures are from the Internet; copyrights belong to their original creators.
+        <br />Hexen only provides a webpage service and does not store, record, or upload any content.
+      </p>
+    </div>
+    <p class="mt-4 text-center text-xs text-ink-secondary">© {year} Hexen · Built with Astro + Svelte</p>
+  </div>
+</footer>

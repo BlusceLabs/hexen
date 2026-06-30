@@ -1,8 +1,8 @@
 import pytest
 
+from hexenapi.v2._web_models import SearchResultsModel, SpecificItemDetailsModel
 from hexenapi.v2.constants import SubjectType
 from hexenapi.v2.core import Search, SingleItemDetails, TVSeriesDetails
-from hexenapi.v2._web_models import SearchResultsModel, SpecificItemDetailsModel
 from hexenapi.v2.requests import Session
 from tests.v2 import TV_SERIES_KEYWORD
 

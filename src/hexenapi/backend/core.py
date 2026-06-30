@@ -9,8 +9,14 @@ from collections.abc import AsyncIterator
 from typing_extensions import deprecated
 
 import hexenapi.v1.core
-from hexenapi.v1.helpers import assert_instance
 from hexenapi.backend._bases import BaseContentProviderAndHelper, BaseItemDetails
+from hexenapi.backend._web_models import (
+    HomepageContentModel,
+    RealContentCategoryModel,
+    SearchResultsItem,
+    SearchResultsModel,
+    SpecificItemDetailsModel,
+)
 from hexenapi.backend.constants import (
     SINGLE_ITEM_SUBJECT_TYPES,
     SUBJECT_TYPE_CHANNEL_ID_MAP,
@@ -21,15 +27,9 @@ from hexenapi.backend.exceptions import (
     MovieboxApiException,
 )
 from hexenapi.backend.helpers import get_absolute_url, validate_genre_top_id
-from hexenapi.backend._web_models import (
-    HomepageContentModel,
-    RealContentCategoryModel,
-    SearchResultsItem,
-    SearchResultsModel,
-    SpecificItemDetailsModel,
-)
 from hexenapi.backend.requests import Session
 from hexenapi.backend.types import FilterParams
+from hexenapi.v1.helpers import assert_instance
 
 
 class Homepage(hexenapi.v1.core.Homepage):
@@ -70,7 +70,8 @@ class ContentCategory(BaseContentProviderAndHelper):
             case "session":
                 if not isinstance(value, Session):
                     raise TypeError(
-                        f"Expected Session instance for 'session', got {type(value).__name__}"
+                        f"Expected Session instance for 'session', "
+                        f"got {type(value).__name__}"
                     )
 
             case "_page":
@@ -80,7 +81,9 @@ class ContentCategory(BaseContentProviderAndHelper):
                     )
 
             case "_per_page":
-                if not (isinstance(value, int) and 1 <= value <= self.per_page_limit):
+                if not (
+                    isinstance(value, int) and 1 <= value <= self.per_page_limit
+                ):
                     raise ValueError(
                         "Value for _per_page must be in the range "
                         f"1-{self.per_page_limit}"
@@ -303,24 +306,29 @@ class SearchWithFilter(Search):
             case "_subject_type":
                 if not isinstance(value, SubjectType):
                     raise TypeError(
-                        f"Expected SubjectType for '_subject_type', got {type(value).__name__}"
+                        f"Expected SubjectType for '_subject_type', "
+                        f"got {type(value).__name__}"
                     )
                 self._channel_id = SUBJECT_TYPE_CHANNEL_ID_MAP[value]
 
             case "_filter_params":
                 if not isinstance(value, FilterParams):
                     raise TypeError(
-                        f"Expected FilterParams for '_filter_params', got {type(value).__name__}"
+                        f"Expected FilterParams for '_filter_params', "
+                        f"got {type(value).__name__}"
                     )
 
             case "session":
                 if not isinstance(value, Session):
                     raise TypeError(
-                        f"Expected Session instance for 'session', got {type(value).__name__}"
+                        f"Expected Session instance for 'session', "
+                        f"got {type(value).__name__}"
                     )
 
             case "_per_page":
-                if not (isinstance(value, int) and 1 <= value <= self.per_page_limit):
+                if not (
+                    isinstance(value, int) and 1 <= value <= self.per_page_limit
+                ):
                     raise ValueError(
                         "Value for _per_page must be in the range "
                         f"1-{self.per_page_limit}"

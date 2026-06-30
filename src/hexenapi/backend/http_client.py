@@ -125,9 +125,9 @@ class MovieBoxHttpClient:
 
         Returns ``(winning_base_url, response)``.
         """
-        assert self._client is not None, (
-            "Client not started – use 'async with' context."
-        )
+        assert (
+            self._client is not None
+        ), "Client not started – use 'async with' context."
 
         last_response: httpx.Response | None = None
         last_exception: Exception = Exception
@@ -174,7 +174,7 @@ class MovieBoxHttpClient:
         if last_response is None:
             raise RuntimeError(
                 f"All hosts exhausted for {path_and_query}. "
-                 "Set logging level to debug to see the actual errors"
+                "Set logging level to debug to see the actual errors"
             ) from last_exception
 
         return last_base, last_response

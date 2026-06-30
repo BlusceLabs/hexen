@@ -1,0 +1,26 @@
+---
+import PosterCard from './PosterCard.astro';
+import type { Movie, TvShow, SearchResult } from '@/lib/api/types';
+
+interface Props {
+  items: (Movie | TvShow | SearchResult)[];
+  type?: 'movie' | 'tv' | 'person';
+  title?: string;
+}
+
+const { items, type, title } = Astro.props;
+---
+{title && (
+  <div class="mb-3 flex items-center justify-between">
+    <h2 class="text-xl font-bold text-ink-primary">{title}</h2>
+  </div>
+)}
+{items.length > 0 ? (
+  <div class="poster-grid">
+    {items.map((item) => (
+      <PosterCard item={item} type={type} />
+    ))}
+  </div>
+) : (
+  <p class="py-8 text-center text-ink-secondary">No results found.</p>
+)}

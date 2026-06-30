@@ -1,6 +1,7 @@
 import pytest
 
 from hexenapi.v1.models import SuggestedItemsModel
+from hexenapi.v2._web_models import HomepageContentModel, RealContentCategoryModel
 from hexenapi.v2.core import (
     ContentCategory,
     Homepage,
@@ -8,7 +9,6 @@ from hexenapi.v2.core import (
     SearchSuggestion,
     Session,
 )
-from hexenapi.v2._web_models import HomepageContentModel, RealContentCategoryModel
 from tests.v2 import MOVIE_KEYWORD
 
 

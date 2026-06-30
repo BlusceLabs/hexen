@@ -1,10 +1,10 @@
 import pytest
 
+from hexenapi.v2._web_models import SearchResultsModel
 from hexenapi.v2.core import (
     SearchWithFilter,
     SubjectType,
 )
-from hexenapi.v2._web_models import SearchResultsModel
 from hexenapi.v2.types import FilterParams
 
 

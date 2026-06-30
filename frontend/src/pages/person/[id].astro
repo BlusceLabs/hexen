@@ -1,120 +1,103 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getPersonDetails } from '../../lib/api';
+import DefaultLayout from '@/layouts/DefaultLayout.astro';
+import PosterCard from '@/components/media/PosterCard.astro';
+import { api, ApiError } from '@/lib/api/client';
+import type { Person, PersonMovieCredit, PersonTvCredit } from '@/lib/api/types';
+import { profileUrl } from '@/lib/utils/image';
+import { formatDate } from '@/lib/utils/format';
 
 const { id } = Astro.params;
-let person: any = null;
-let error = false;
+if (!id || isNaN(Number(id))) {
+  return Astro.redirect('/404');
+}
+
+let person: Person | null = null;
+let movieCredits: PersonMovieCredit[] = [];
+let tvCredits: PersonTvCredit[] = [];
+let errorMsg = '';
 
 try {
-  person = await getPersonDetails(Number(id));
-} catch {
-  error = true;
+  const [p, mc, tc] = await Promise.all([
+    api.person(Number(id)),
+    api.personMovieCredits(Number(id)).then(r => r.movies ?? []).catch(() => []),
+    api.personTvCredits(Number(id)).then(r => r.tv ?? []).catch(() => []),
+  ]);
+  person = p; movieCredits = mc; tvCredits = tc;
+} catch (e) {
+  errorMsg = e instanceof ApiError ? e.message : 'Failed to load person';
 }
+
+const profile = person ? profileUrl(person.profile_path, 'h632') : null;
+// Sort by popularity/vote
+movieCredits = [...movieCredits].sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0));
+tvCredits = [...tvCredits].sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0));
 ---
-<BaseLayout title={person?.name || 'Person Not Found'}>
-  {error ? (
-    <div class="error-page">
-      <h2>404</h2>
-      <p>Person not found.</p>
-      <a href="/browse" class="btn-primary">Browse Content</a>
+<DefaultLayout title={person ? `${person.name} — Hexen` : 'Person — Hexen'} description={person?.biography?.slice(0, 160)}>
+  {errorMsg ? (
+    <div class="container-content py-16 text-center">
+      <p class="text-red-400">{errorMsg}</p>
+      <a href="/search" class="mt-4 inline-block btn-ghost">← Search</a>
     </div>
-  ) : person && (
-    <div class="container person-page">
-      <div class="person-hero">
-        <div class="person-photo">
-          {person.profile ? <img src={person.profile} alt={person.name} /> : <div class="photo-ph">—</div>}
-        </div>
-        <div class="person-info">
-          <h1>{person.name}</h1>
-          {person.known_for && <p class="known-for">{person.known_for}</p>}
-          <div class="facts">
-            {person.birthday && <span class="fact">Born {person.birthday}</span>}
-            {person.deathday && <span class="fact">Died {person.deathday}</span>}
-            {person.place_of_birth && <span class="fact">{person.place_of_birth}</span>}
+  ) : person ? (
+    <div class="container-content py-8">
+      <div class="flex flex-col gap-6 sm:flex-row">
+        <div class="flex-shrink-0">
+          <div class="w-40 overflow-hidden rounded-xl shadow-2xl sm:w-52">
+            {profile ? (
+              <img src={profile} alt={person.name} class="w-full" />
+            ) : (
+              <div class="flex aspect-[2/3] items-center justify-center bg-base-elevated text-4xl text-ink-secondary">{person.name.charAt(0)}</div>
+            )}
           </div>
+        </div>
+
+        <div class="flex-1">
+          <h1 class="text-3xl font-extrabold sm:text-4xl">{person.name}</h1>
+          {person.known_for_department && (
+            <p class="mt-1 text-ink-secondary">Known for {person.known_for_department}</p>
+          )}
+          <div class="mt-3 flex flex-wrap gap-4 text-sm text-ink-secondary">
+            {person.birthday && <span>Born: {formatDate(person.birthday)}</span>}
+            {person.deathday && <span>Died: {formatDate(person.deathday)}</span>}
+            {person.place_of_birth && <span>From: {person.place_of_birth}</span>}
+          </div>
+
+          {person.biography && (
+            <section class="mt-6">
+              <h2 class="mb-2 text-lg font-bold">Biography</h2>
+              <p class="whitespace-pre-line leading-relaxed text-ink-secondary">{person.biography}</p>
+            </section>
+          )}
         </div>
       </div>
 
-      {person.biography && (
-        <section class="bio-section">
-          <h2>Biography</h2>
-          <p>{person.biography}</p>
-        </section>
-      )}
-
-      {person.movie_credits.length > 0 && (
-        <section class="credits-section">
-          <div class="section-header">
-            <h2>Movie Credits</h2>
-            <span class="count">{person.movie_credits.length}</span>
-          </div>
-          <div class="yt-grid">
-            {person.movie_credits.slice(0, 12).map((m: any) => (
-              <a href={`/details/${m.id}?type=movie`} class="yt-card">
-                <div class="yt-thumb">
-                  {m.poster ? <img src={m.poster} alt={m.title} loading="lazy" /> : <div class="yt-thumb-ph">—</div>}
-                </div>
-                <div class="yt-info">
-                  <div class="yt-meta">
-                    <div class="yt-title">{m.title}</div>
-                    {m.year && <div class="yt-stats">{m.year}</div>}
-                  </div>
-                </div>
-              </a>
+      {movieCredits.length > 0 && (
+        <section class="mt-10">
+          <h2 class="mb-3 text-xl font-bold">🎬 Movie Credits ({movieCredits.length})</h2>
+          <div class="no-scrollbar flex gap-4 overflow-x-auto pb-2">
+            {movieCredits.slice(0, 18).map((m) => (
+              <div class="w-36 flex-shrink-0">
+                <PosterCard item={m as any} type="movie" />
+                {m.character && <p class="mt-1 truncate text-center text-xs text-ink-secondary">as {m.character}</p>}
+              </div>
             ))}
           </div>
         </section>
       )}
 
-      {person.tv_credits.length > 0 && (
-        <section class="credits-section">
-          <div class="section-header">
-            <h2>TV Credits</h2>
-            <span class="count">{person.tv_credits.length}</span>
-          </div>
-          <div class="yt-grid">
-            {person.tv_credits.slice(0, 12).map((s: any) => (
-              <a href={`/details/${s.id}?type=tv`} class="yt-card">
-                <div class="yt-thumb">
-                  {s.poster ? <img src={s.poster} alt={s.title} loading="lazy" /> : <div class="yt-thumb-ph">—</div>}
-                </div>
-                <div class="yt-info">
-                  <div class="yt-meta">
-                    <div class="yt-title">{s.title}</div>
-                    {s.year && <div class="yt-stats">{s.year}</div>}
-                  </div>
-                </div>
-              </a>
+      {tvCredits.length > 0 && (
+        <section class="mt-10">
+          <h2 class="mb-3 text-xl font-bold">📺 TV Credits ({tvCredits.length})</h2>
+          <div class="no-scrollbar flex gap-4 overflow-x-auto pb-2">
+            {tvCredits.slice(0, 18).map((t) => (
+              <div class="w-36 flex-shrink-0">
+                <PosterCard item={t as any} type="tv" />
+                {t.character && <p class="mt-1 truncate text-center text-xs text-ink-secondary">as {t.character}</p>}
+              </div>
             ))}
           </div>
         </section>
       )}
     </div>
-  )}
-</BaseLayout>
-
-<style>
-  .person-page { padding: 24px; }
-  .person-hero { display: flex; gap: 24px; margin-bottom: 32px; }
-  .person-photo { width: 200px; flex-shrink: 0; }
-  .person-photo img { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: var(--radius); }
-  .photo-ph { width: 100%; aspect-ratio: 2/3; background: var(--bg-card); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 64px; }
-  .person-info { padding-top: 12px; }
-  .person-info h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
-  .known-for { color: var(--text-secondary); font-size: 14px; margin-bottom: 12px; }
-  .facts { display: flex; flex-wrap: wrap; gap: 8px; }
-  .fact { font-size: 13px; color: var(--text-secondary); padding: 4px 10px; background: var(--bg-chip); border-radius: 6px; }
-
-  .bio-section { margin-bottom: 32px; }
-  .bio-section h2 { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
-  .bio-section p { font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
-
-  .credits-section { margin-bottom: 32px; }
-  .count { font-size: 14px; color: var(--text-secondary); }
-
-  @media (max-width: 600px) {
-    .person-hero { flex-direction: column; align-items: center; text-align: center; }
-    .person-photo { width: 160px; }
-  }
-</style>
+  ) : null}
+</DefaultLayout>

@@ -87,9 +87,9 @@ class BaseFileDownloaderAndHelper(FileDownloaderHelper, BaseFileDownloader):
         if group and season and episode:
             # series it is
             working_dir = Path(working_dir)
-            assert working_dir.exists(), (
-                f"The chosen working directory does not exist - {working_dir}"
-            )
+            assert (
+                working_dir.exists()
+            ), f"The chosen working directory does not exist - {working_dir}"
 
             final_dir = working_dir.joinpath(
                 f"{search_results_item.title} "

@@ -1,167 +1,153 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import FavoriteButton from '../../components/FavoriteButton.svelte';
-import { getTVDetails } from '../../lib/api';
+import DefaultLayout from '@/layouts/DefaultLayout.astro';
+import CastList from '@/components/details/CastList.astro';
+import VideoModal from '@/components/details/VideoModal.svelte';
+import ReviewCard from '@/components/details/ReviewCard.astro';
+import PosterCard from '@/components/media/PosterCard.astro';
+import SeasonPicker from '@/components/details/SeasonPicker.svelte';
+import { api, ApiError } from '@/lib/api/client';
+import type { TvShow, CastMember, Video, Review, Season } from '@/lib/api/types';
+import { backdropUrl, posterUrl, stillUrl } from '@/lib/utils/image';
+import { formatDate, formatRating } from '@/lib/utils/format';
 
 const { id } = Astro.params;
-let show: any = null;
-let error = false;
+const seasonParam = Astro.url.searchParams.get('season');
+if (!id || isNaN(Number(id))) {
+  return Astro.redirect('/404');
+}
+
+let show: TvShow | null = null;
+let cast: CastMember[] = [];
+let videos: Video[] = [];
+let similar: TvShow[] = [];
+let recommendations: TvShow[] = [];
+let reviews: Review[] = [];
+let season: Season | null = null;
+let errorMsg = '';
 
 try {
-  show = await getTVDetails(Number(id));
-} catch {
-  error = true;
+  const [s, c, v, sim, rec, rev] = await Promise.all([
+    api.tv(Number(id)),
+    api.tvCredits(Number(id)).then(r => r.cast ?? []).catch(() => []),
+    api.tvVideos(Number(id)).then(r => r.videos ?? []).catch(() => []),
+    api.tvSimilar(Number(id), 1).then(r => r.results ?? []).catch(() => []),
+    api.tvRecommendations(Number(id), 1).then(r => r.results ?? []).catch(() => []),
+    api.tvReviews(Number(id)).then(r => r.reviews ?? []).catch(() => []),
+  ]);
+  show = s; cast = c; videos = v; similar = sim; recommendations = rec; reviews = rev;
+
+  // Load first or requested season
+  const seasons = show.seasons?.filter(sn => sn.season_number > 0) ?? [];
+  const requestedSeason = seasonParam ? parseInt(seasonParam) : (seasons[0]?.season_number ?? 1);
+  if (seasons.length > 0) {
+    season = await api.tvSeason(Number(id), requestedSeason);
+  }
+} catch (e) {
+  errorMsg = e instanceof ApiError ? e.message : 'Failed to load TV show';
 }
+
+const backdrop = show ? backdropUrl(show.backdrop_path, 'w1280') : null;
+const poster = show ? posterUrl(show.poster_path, 'w500') : null;
 ---
-<BaseLayout title={show?.title || 'TV Show Not Found'} description={show?.overview} image={show?.poster}>
-  {error ? (
-    <div class="error-page">
-      <h2>404</h2>
-      <p>TV show not found. It may have been removed or the ID is invalid.</p>
-      <a href="/tv" class="btn-primary">Browse TV Shows →</a>
+<DefaultLayout title={show ? `${show.name} — Hexen` : 'TV Show — Hexen'} description={show?.overview}>
+  {errorMsg ? (
+    <div class="container-content py-16 text-center">
+      <p class="text-red-400">{errorMsg}</p>
+      <a href="/tv" class="mt-4 inline-block btn-ghost">← Back to TV Shows</a>
     </div>
-  ) : show && (
-    <div class="detail-backdrop" style={`background-image: url(${show.backdrop || show.poster})`}></div>
-    <div class="detail-backdrop-gradient"></div>
+  ) : show ? (
+    <>
+      <section class="relative h-[50vh] min-h-[360px] w-full overflow-hidden">
+        {backdrop ? (
+          <img src={backdrop} alt="" class="absolute inset-0 h-full w-full object-cover" />
+        ) : (
+          <div class="absolute inset-0 bg-base-elevated"></div>
+        )}
+        <div class="absolute inset-0 bg-gradient-to-t from-base via-base/70 to-base/30"></div>
+      </section>
 
-    <div class="container detail-layout">
-      <div class="poster-col">
-        <div class="poster-wrap">
-          {show.poster ? <img src={show.poster} alt={show.title} class="detail-poster" /> : <div class="detail-poster-ph">—</div>}
-          <FavoriteButton id={show.id} title={show.title} poster={show.poster} year={show.year} media_type="tv" client:load />
-        </div>
-      </div>
-      <div class="info-col">
-        <h1>{show.title} <span class="year">({show.year})</span></h1>
-        {show.tagline && <p class="tagline">"{show.tagline}"</p>}
-        <div class="meta-row">
-          {show.rating > 0 && <span class="badge badge-gold"> {(show.rating / 10).toFixed(1)}</span>}
-          {show.genres.map((g: string) => <span class="badge">{g}</span>)}
-          {show.status && <span class="badge">{show.status}</span>}
-        </div>
-        <p class="overview">{show.overview}</p>
-
-        {show.videos.length > 0 && (
-          <div class="detail-section">
-            <h2>Videos ({show.videos.length})</h2>
-            <div class="video-grid">
-              {show.videos.slice(0, 4).map((v: any) => (
-                <div class="video-card">
-                  <iframe src={`https://www.youtube.com/embed/${v.key}`} title={v.name} allowfullscreen loading="lazy"></iframe>
-                  <p class="video-name">{v.name} <span class="badge">{v.type}</span></p>
-                </div>
-              ))}
+      <div class="container-content -mt-32 relative pb-12">
+        <div class="flex flex-col gap-6 sm:flex-row">
+          <div class="flex-shrink-0">
+            <div class="w-40 overflow-hidden rounded-xl shadow-2xl sm:w-52">
+              {poster ? (
+                <img src={poster} alt={show.name} class="w-full" />
+              ) : (
+                <div class="flex aspect-[2/3] items-center justify-center bg-base-elevated text-ink-secondary">No image</div>
+              )}
             </div>
           </div>
-        )}
 
-        {show.cast.length > 0 && (
-          <div class="detail-section">
-            <h2>Cast ({show.cast.length})</h2>
-            <div class="cast-grid">
-              {show.cast.slice(0, 12).map((c: any) => (
-                <a href={`/person/${c.id}`} class="cast-card">
-                  {c.profile ? <img src={c.profile} alt={c.name} class="cast-img" loading="lazy" /> : <div class="cast-ph">—</div>}
-                  <p class="cast-name">{c.name}</p>
-                  <p class="cast-char">{c.character}</p>
-                </a>
-              ))}
+          <div class="flex-1 pt-2 sm:pt-32">
+            <h1 class="text-3xl font-extrabold sm:text-4xl">{show.name}</h1>
+            {show.tagline && <p class="mt-1 text-lg italic text-ink-secondary">{show.tagline}</p>}
+            <div class="mt-3 flex flex-wrap items-center gap-3 text-sm text-ink-secondary">
+              {show.vote_average > 0 && <span class="text-yellow-400">★ {formatRating(show.vote_average)}</span>}
+              {show.first_air_date && <span>{formatDate(show.first_air_date)}</span>}
+              {show.number_of_seasons && <span>{show.number_of_seasons} seasons</span>}
+              {show.number_of_episodes && <span>{show.number_of_episodes} episodes</span>}
+              {show.status && <span class="chip">{show.status}</span>}
             </div>
-          </div>
-        )}
 
-        {show.watch_providers && Object.keys(show.watch_providers).length > 0 && (
-          <div class="detail-section">
-            <h2>Where to Watch</h2>
-            {Object.entries(show.watch_providers).slice(0, 3).map(([region, providers]: [string, any]) => (
-              <div class="providers">
-                <span class="provider-region">{region}</span>
-                <div class="provider-list">
-                  {providers.map((p: any) => <span class="provider-badge"><img src={p.logo_url} alt={p.provider_name} class="provider-logo" loading="lazy" />{p.provider_name}</span>)}
-                </div>
+            {show.genres && show.genres.length > 0 && (
+              <div class="mt-3 flex flex-wrap gap-2">
+                {show.genres.map(g => <a href={`/discover?with_genres=${g.id}&type=tv`} class="chip hover:chip-active">{g.name}</a>)}
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        {show.keywords.length > 0 && (
-          <div class="detail-section">
-            <h2>Keywords</h2>
-            <div class="tags">
-              {show.keywords.map((k: string) => <span class="tag">{k}</span>)}
+            <div class="mt-6 flex gap-3">
+              <a href={`/watch/tv/${show.id}`} class="btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                Watch
+              </a>
             </div>
           </div>
+        </div>
+
+        {show.overview && (
+          <section class="mt-8">
+            <h2 class="mb-2 text-xl font-bold">Overview</h2>
+            <p class="leading-relaxed text-ink-secondary">{show.overview}</p>
+          </section>
         )}
 
-        {show.reviews.length > 0 && (
-          <div class="detail-section">
-            <h2>Reviews ({show.reviews.length})</h2>
-            {show.reviews.slice(0, 5).map((r: any) => (
-              <div class="review-card">
-                <div class="review-header">
-                  <strong>{r.author}</strong>
-                  {r.rating && <span class="badge badge-gold"> {r.rating}/10</span>}
-                </div>
-                <p>{r.content.slice(0, 300)}{r.content.length > 300 ? '...' : ''}</p>
-              </div>
-            ))}
-          </div>
+        {/* Season picker + episodes */}
+        {show.seasons && show.seasons.filter(s => s.season_number > 0).length > 0 && (
+          <SeasonPicker
+            client:visible
+            showId={show.id}
+            seasons={show.seasons.filter(s => s.season_number > 0).map(s => ({ season_number: s.season_number, name: s.name, episode_count: s.episode_count }))}
+            initialSeason={season}
+          />
         )}
 
-        {show.logos.length > 0 && (
-          <div class="detail-section">
-            <h2>Title Logos ({show.logos.length})</h2>
-            <div class="logos">
-              {show.logos.map((l: any) => <img src={l.url} alt={show.title + ' logo'} class="logo-img" />)}
-            </div>
-          </div>
-        )}
+        <CastList cast={cast} />
+        <VideoModal client:visible videos={videos} />
 
-        {show.translations.length > 0 && (
-          <div class="detail-section">
-            <h2>Translations ({show.translations.length})</h2>
-            <div class="tags">
-              {show.translations.map((t: any) => <span class="tag">{t.english_name}</span>)}
-            </div>
-          </div>
-        )}
-
-        {show.similar.length > 0 && (
-          <div class="detail-section">
-            <h2>Similar Shows</h2>
-            <div class="similar-grid">
-              {show.similar.slice(0, 6).map((s: any) => (
-                <a href={`/tv/${s.id}`} class="mini-card">
-                  {s.poster ? <img src={s.poster} alt={s.title} loading="lazy" /> : <div class="mini-ph">—</div>}
-                  <p>{s.title}</p>
-                </a>
+        {recommendations.length > 0 && (
+          <section class="mt-8">
+            <h2 class="mb-3 text-xl font-bold">Recommended</h2>
+            <div class="no-scrollbar flex gap-4 overflow-x-auto pb-2">
+              {recommendations.slice(0, 12).map((t) => (
+                <div class="w-36 flex-shrink-0"><PosterCard item={t} type="tv" /></div>
               ))}
             </div>
-          </div>
+          </section>
         )}
 
-        {show.recommendations.length > 0 && (
-          <div class="detail-section">
-            <h2>Recommended</h2>
-            <div class="similar-grid">
-              {show.recommendations.slice(0, 6).map((s: any) => (
-                <a href={`/tv/${s.id}`} class="mini-card">
-                  {s.poster ? <img src={s.poster} alt={s.title} loading="lazy" /> : <div class="mini-ph">—</div>}
-                  <p>{s.title}</p>
-                </a>
+        {similar.length > 0 && (
+          <section class="mt-8">
+            <h2 class="mb-3 text-xl font-bold">More Like This</h2>
+            <div class="no-scrollbar flex gap-4 overflow-x-auto pb-2">
+              {similar.slice(0, 12).map((t) => (
+                <div class="w-36 flex-shrink-0"><PosterCard item={t} type="tv" /></div>
               ))}
             </div>
-          </div>
+          </section>
         )}
+
+        <ReviewCard reviews={reviews} />
       </div>
-    </div>
-  )}
-</BaseLayout>
-
-<style>
-  h1 { font-size: 36px; font-weight: 800; }
-  .year { color: var(--text-secondary); font-weight: 400; }
-  .tagline { font-style: italic; color: var(--text-secondary); margin: 8px 0 16px; }
-  .meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
-  .overview { font-size: 16px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 24px; }
-</style>
+    </>
+  ) : null}
+</DefaultLayout>

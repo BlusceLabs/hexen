@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import date, datetime
 from typing import Any
 
@@ -7,6 +8,8 @@ from pydantic import BaseModel, Field, HttpUrl, field_validator
 from hexenapi.backend.constants import SubjectType, TabID, TopicType
 from hexenapi.backend.models.common import MODEL_CONFIG
 from hexenapi.backend.models.homepage import Image, PlayUrl
+
+logger = logging.getLogger(__name__)
 
 
 class VerticalRankItem(BaseModel):
@@ -105,7 +108,8 @@ class ResultsSubjectModel(BaseModel):
         if isinstance(v, str):
             try:
                 return json.loads(v)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Failed to parse ops JSON: {e}")
                 return {}
         return v
 

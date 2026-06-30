@@ -60,7 +60,11 @@ class Movies:
 
     async def external_ids(self, movie_id: int) -> dict:
         data = await self.details(movie_id)
-        return {k: v for k, v in data.items() if k in ("imdb_id", "twitter", "facebook", "instagram")}
+        return {
+            k: v
+            for k, v in data.items()
+            if k in ("imdb_id", "twitter", "facebook", "instagram")
+        }
 
     async def images(self, movie_id: int) -> dict:
         html = await self._c.get_html(f"/movie/{movie_id}/images")
@@ -68,7 +72,10 @@ class Movies:
 
     async def logos(self, movie_id: int, lang: str = "en") -> list[dict]:
         imgs = await self.images(movie_id)
-        return [l for l in imgs.get("logos", []) if lang in l.get("file_path", "")]
+        return [
+            logo for logo in imgs.get("logos", [])
+            if lang in logo.get("file_path", "")
+        ]
 
     async def keywords(self, movie_id: int) -> list[dict]:
         data = await self.details(movie_id)
@@ -106,25 +113,33 @@ class Movies:
         html = await self._c.get_html(f"/movie/{movie_id}/watch/providers")
         return extract_watch_providers(html)
 
-    async def search(self, query: str, page: int = 1, year: int | None = None) -> list[dict]:
+    async def search(
+        self, query: str, page: int = 1, year: int | None = None
+    ) -> list[dict]:
         url = _search_url("/search/movie", query, page, year=year)
         html = await self._c.get_html(url)
         return extract_search_results(html)
 
     async def popular(self, page: int = 1) -> list[dict]:
-        html = await self._c.get_html(f"/movie/popular?page={page}")
+        html = await self._c.get_html(f"/movie?page={page}&language=en-US")
         return extract_list_items(html, "movie")
 
     async def top_rated(self, page: int = 1) -> list[dict]:
-        html = await self._c.get_html(f"/movie/top_rated?page={page}")
+        html = await self._c.get_html(
+            f"/movie/top-rated?page={page}&language=en-US"
+        )
         return extract_list_items(html, "movie")
 
     async def now_playing(self, page: int = 1) -> list[dict]:
-        html = await self._c.get_html(f"/movie/now_playing?page={page}")
+        html = await self._c.get_html(
+            f"/movie/now-playing?page={page}&language=en-US"
+        )
         return extract_list_items(html, "movie")
 
     async def upcoming(self, page: int = 1) -> list[dict]:
-        html = await self._c.get_html(f"/movie/upcoming?page={page}")
+        html = await self._c.get_html(
+            f"/movie/upcoming?page={page}&language=en-US"
+        )
         return extract_list_items(html, "movie")
 
     async def latest(self) -> dict:
@@ -172,7 +187,11 @@ class TV:
 
     async def external_ids(self, tv_id: int) -> dict:
         data = await self.details(tv_id)
-        return {k: v for k, v in data.items() if k in ("imdb_id", "twitter", "facebook", "instagram")}
+        return {
+            k: v
+            for k, v in data.items()
+            if k in ("imdb_id", "twitter", "facebook", "instagram")
+        }
 
     async def images(self, tv_id: int) -> dict:
         html = await self._c.get_html(f"/tv/{tv_id}/images")
@@ -180,7 +199,10 @@ class TV:
 
     async def logos(self, tv_id: int, lang: str = "en") -> list[dict]:
         imgs = await self.images(tv_id)
-        return [l for l in imgs.get("logos", []) if lang in l.get("file_path", "")]
+        return [
+            logo for logo in imgs.get("logos", [])
+            if lang in logo.get("file_path", "")
+        ]
 
     async def keywords(self, tv_id: int) -> list[dict]:
         data = await self.details(tv_id)
@@ -223,19 +245,25 @@ class TV:
         return extract_search_results(html)
 
     async def popular(self, page: int = 1) -> list[dict]:
-        html = await self._c.get_html(f"/tv/popular?page={page}")
+        html = await self._c.get_html(f"/tv?page={page}&language=en-US")
         return extract_list_items(html, "tv")
 
     async def top_rated(self, page: int = 1) -> list[dict]:
-        html = await self._c.get_html(f"/tv/top_rated?page={page}")
+        html = await self._c.get_html(
+            f"/tv/top-rated?page={page}&language=en-US"
+        )
         return extract_list_items(html, "tv")
 
     async def airing_today(self, page: int = 1) -> list[dict]:
-        html = await self._c.get_html(f"/tv/airing_today?page={page}")
+        html = await self._c.get_html(
+            f"/tv/airing-today?page={page}&language=en-US"
+        )
         return extract_list_items(html, "tv")
 
     async def on_the_air(self, page: int = 1) -> list[dict]:
-        html = await self._c.get_html(f"/tv/on_the_air?page={page}")
+        html = await self._c.get_html(
+            f"/tv/on-the-air?page={page}&language=en-US"
+        )
         return extract_list_items(html, "tv")
 
     async def latest(self) -> dict:
@@ -244,7 +272,9 @@ class TV:
     async def season_details(self, tv_id: int, season: int) -> dict:
         return await TVSeason(self._c).details(tv_id, season)
 
-    async def episode_details(self, tv_id: int, season: int, episode: int) -> dict:
+    async def episode_details(
+        self, tv_id: int, season: int, episode: int
+    ) -> dict:
         return await TVEpisode(self._c).details(tv_id, season, episode)
 
 
@@ -288,33 +318,49 @@ class TVEpisode:
         self._c = c
 
     async def details(self, tv_id: int, season: int, episode: int) -> dict:
-        return await self._c.get_page_data(f"/tv/{tv_id}/season/{season}/episode/{episode}")
+        return await self._c.get_page_data(
+            f"/tv/{tv_id}/season/{season}/episode/{episode}"
+        )
 
     async def account_states(self, tv_id: int, season: int, episode: int) -> dict:
-        html = await self._c.get_html(f"/tv/{tv_id}/season/{season}/episode/{episode}")
+        html = await self._c.get_html(
+            f"/tv/{tv_id}/season/{season}/episode/{episode}"
+        )
         return extract_account_states(html)
 
     async def changes(self, tv_id: int, season: int, episode: int) -> list[dict]:
-        html = await self._c.get_html(f"/tv/{tv_id}/season/{season}/episode/{episode}")
+        html = await self._c.get_html(
+            f"/tv/{tv_id}/season/{season}/episode/{episode}"
+        )
         return extract_changes(html)
 
     async def credits(self, tv_id: int, season: int, episode: int) -> list[dict]:
-        html = await self._c.get_html(f"/tv/{tv_id}/season/{season}/episode/{episode}/cast")
+        html = await self._c.get_html(
+            f"/tv/{tv_id}/season/{season}/episode/{episode}/cast"
+        )
         return extract_cast(html)
 
     async def external_ids(self, tv_id: int, season: int, episode: int) -> dict:
         return await self.details(tv_id, season, episode)
 
     async def images(self, tv_id: int, season: int, episode: int) -> dict:
-        html = await self._c.get_html(f"/tv/{tv_id}/season/{season}/episode/{episode}/images")
+        html = await self._c.get_html(
+            f"/tv/{tv_id}/season/{season}/episode/{episode}/images"
+        )
         return extract_images(html)
 
-    async def translations(self, tv_id: int, season: int, episode: int) -> list[dict]:
-        html = await self._c.get_html(f"/tv/{tv_id}/season/{season}/episode/{episode}/translations")
+    async def translations(
+        self, tv_id: int, season: int, episode: int
+    ) -> list[dict]:
+        html = await self._c.get_html(
+            f"/tv/{tv_id}/season/{season}/episode/{episode}/translations"
+        )
         return extract_translations(html)
 
     async def videos(self, tv_id: int, season: int, episode: int) -> list[dict]:
-        html = await self._c.get_html(f"/tv/{tv_id}/season/{season}/episode/{episode}/videos")
+        html = await self._c.get_html(
+            f"/tv/{tv_id}/season/{season}/episode/{episode}/videos"
+        )
         return extract_videos(html)
 
 
@@ -336,7 +382,11 @@ class People:
 
     async def external_ids(self, person_id: int) -> dict:
         data = await self.details(person_id)
-        return {k: v for k, v in data.items() if k in ("imdb_id", "twitter", "facebook", "instagram")}
+        return {
+            k: v
+            for k, v in data.items()
+            if k in ("imdb_id", "twitter", "facebook", "instagram")
+        }
 
     async def images(self, person_id: int) -> dict:
         html = await self._c.get_html(f"/person/{person_id}/images")
@@ -355,7 +405,7 @@ class People:
         return extract_translations(html)
 
     async def popular(self, page: int = 1) -> list[dict]:
-        html = await self._c.get_html(f"/person/popular?page={page}")
+        html = await self._c.get_html(f"/person?page={page}&language=en-US")
         return extract_list_items(html, "person")
 
     async def latest(self) -> dict:
@@ -494,7 +544,9 @@ class Networks:
         return await self._c.get_page_data(f"/network/{network_id}")
 
     async def search(self, query: str, page: int = 1) -> list[dict]:
-        html = await self._c.get_html(f"/search/network?query={query}&page={page}")
+        html = await self._c.get_html(
+            f"/search/network?query={query}&page={page}"
+        )
         return extract_search_results(html)
 
 
@@ -597,10 +649,29 @@ class Configuration:
         return extract_list_items(html, "language")
 
     async def primary_translations(self) -> list[str]:
-        return ["en-US", "es-ES", "fr-FR", "de-DE", "ja-JP", "ko-KR", "pt-BR", "zh-CN"]
+        return [
+            "en-US",
+            "es-ES",
+            "fr-FR",
+            "de-DE",
+            "ja-JP",
+            "ko-KR",
+            "pt-BR",
+            "zh-CN",
+        ]
 
     async def timezones(self) -> list[dict]:
-        return [{"iso_3166_1": "US", "zones": ["America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles"]}]
+        return [
+            {
+                "iso_3166_1": "US",
+                "zones": [
+                    "America/New_York",
+                    "America/Chicago",
+                    "America/Denver",
+                    "America/Los_Angeles",
+                ],
+            }
+        ]
 
 
 class Authentication:

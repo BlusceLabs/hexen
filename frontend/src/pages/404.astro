@@ -1,10 +1,14 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import DefaultLayout from '@/layouts/DefaultLayout.astro';
 ---
-<BaseLayout title="Page Not Found">
-  <div class="error-page">
-    <h2>404</h2>
-    <p>This page doesn't exist or has been moved.</p>
-    <a href="/home" class="btn-primary">Go to Home</a>
+<DefaultLayout title="404 — Hexen">
+  <div class="container-content flex flex-col items-center justify-center py-24 text-center">
+    <p class="text-6xl font-extrabold text-accent">404</p>
+    <h1 class="mt-4 text-2xl font-bold">Page not found</h1>
+    <p class="mt-2 text-ink-secondary">The page you're looking for doesn't exist or has been moved.</p>
+    <div class="mt-6 flex gap-3">
+      <a href="/" class="btn-primary">Go Home</a>
+      <a href="/search" class="btn-ghost">Search</a>
+    </div>
   </div>
-</BaseLayout>
+</DefaultLayout>

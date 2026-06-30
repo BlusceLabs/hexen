@@ -1,5 +1,4 @@
-"""
-### backend - Unified API Client (formerly v1, v2, v3)
+"""### backend - Unified API Client (formerly v1, v2, v3)
 **Endpoints:** 
 - H5 API: `h5-api.aoneroom.com`
 - H5 Web: `h5.aoneroom.com` 
@@ -22,23 +21,21 @@ custom resolutions.
 
 import logging
 
-logger = logging.getLogger(__name__)
-
-from throttlebuster import (  # noqa: E402
+from throttlebuster import (
     DownloadedFile,
     DownloadMode,
     DownloadTracker,
 )
 
-from hexenapi.backend.constants import (  # noqa: E402
+from hexenapi.backend.constants import (
     DOWNLOAD_QUALITIES,
     HOST_URL,
     MIRROR_HOSTS,
     SELECTED_HOST,
-    SubjectType,
     CustomResolutionType,
+    SubjectType,
 )
-from hexenapi.backend.core import (  # noqa: E402
+from hexenapi.backend.core import (
     AnimeDetails,
     ContentCategory,
     EducationDetails,
@@ -52,7 +49,7 @@ from hexenapi.backend.core import (  # noqa: E402
     SingleItemDetails,
     TVSeriesDetails,
 )
-from hexenapi.backend.core_v1 import (  # noqa: E402
+from hexenapi.backend.core_v1 import (
     HotMoviesAndTVSeries,
     MovieDetails as MovieDetailsV1,
     PopularSearch,
@@ -60,47 +57,49 @@ from hexenapi.backend.core_v1 import (  # noqa: E402
     Trending,
     TVSeriesDetails as TVSeriesDetailsV1,
 )
-from hexenapi.backend.download import (  # noqa: E402
+from hexenapi.backend.core_v3 import (
+    DownloadableCaptionFileDetails as AndroidDownloadableCaptionFileDetails,
+    DownloadableVideoFilesDetail as AndroidDownloadableFilesDetail,
+    Homepage as AndroidHomepage,
+    ItemDetails as AndroidItemDetails,
+    Search as AndroidSearch,
+    SearchV2 as AndroidSearchV2,
+    SeasonDetails as AndroidSeasonDetails,
+)
+from hexenapi.backend.download import (
     DownloadableSingleFilesDetail,
     DownloadableTVSeriesFilesDetail,
 )
-from hexenapi.backend.download_v1 import (  # noqa: E402
+from hexenapi.backend.download_v1 import (
     CaptionFileDownloader,
     DownloadableMovieFilesDetail,
     DownloadableTVSeriesFilesDetail as DownloadableTVSeriesFilesDetailV1,
     MediaFileDownloader,
     resolve_media_file_to_be_downloaded,
 )
-from hexenapi.backend.extras.auto import MovieAuto  # noqa: E402
-from hexenapi.backend.requests import Session  # noqa: E402
-from hexenapi.backend.tmdb import TMDBClient as TMDBScraper  # noqa: E402
-from hexenapi.backend.tmdb.endpoints import (
-    Movies as TMDBMovies,
-    TV as TMDBTV,
-    People as TMDBPeople,
-    Search as TMDBSearch,
-    Discover as TMDBDiscover,
-    Trending as TMDBTrending,
-    Genres as TMDBGenres,
-    Configuration as TMDBConfiguration,
-)
-
-# v3 (Android app API) exports — prefixed "Android" to distinguish from H5 API classes
-from hexenapi.backend.http_client import MovieBoxHttpClient  # noqa: E402
-from hexenapi.backend.core_v3 import (  # noqa: E402
-    Homepage as AndroidHomepage,
-    Search as AndroidSearch,
-    SearchV2 as AndroidSearchV2,
-    ItemDetails as AndroidItemDetails,
-    SeasonDetails as AndroidSeasonDetails,
-    DownloadableVideoFilesDetail as AndroidDownloadableFilesDetail,
-    DownloadableCaptionFileDetails as AndroidDownloadableCaptionFileDetails,
-)
-from hexenapi.backend.download_v3 import (  # noqa: E402
-    MediaFileDownloader as AndroidMediaFileDownloader,
+from hexenapi.backend.download_v3 import (
     CaptionFileDownloader as AndroidCaptionFileDownloader,
+    MediaFileDownloader as AndroidMediaFileDownloader,
     resolve_media_file_to_be_downloaded as android_resolve_media_file,
 )
+from hexenapi.backend.extras.auto import MovieAuto
+from hexenapi.backend.http_client import MovieBoxHttpClient
+from hexenapi.backend.requests import Session
+from hexenapi.backend.tmdb import TMDBClient as TMDBScraper
+from hexenapi.backend.tmdb.endpoints import (
+    TV as TMDBTV,
+    Configuration as TMDBConfiguration,
+    Discover as TMDBDiscover,
+    Genres as TMDBGenres,
+    Movies as TMDBMovies,
+    People as TMDBPeople,
+    Search as TMDBSearch,
+    Trending as TMDBTrending,
+)
+
+# v3 (Android app API) exports — prefixed "Android"
+# to distinguish from H5 API classes
+logger = logging.getLogger(__name__)
 
 __all__ = [
     # Core v2 functionality

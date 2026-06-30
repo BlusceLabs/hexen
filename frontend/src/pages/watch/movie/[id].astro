@@ -1,0 +1,80 @@
+---
+import DefaultLayout from '@/layouts/DefaultLayout.astro';
+import StreamSourcePicker from '@/components/player/StreamSourcePicker.svelte';
+import { api, ApiError } from '@/lib/api/client';
+import type { Movie } from '@/lib/api/types';
+import { backdropUrl, posterUrl } from '@/lib/utils/image';
+import { formatRating, formatRuntime, formatDate } from '@/lib/utils/format';
+
+const { id } = Astro.params;
+if (!id || isNaN(Number(id))) {
+  return Astro.redirect('/404');
+}
+
+let movie: Movie | null = null;
+let errorMsg = '';
+try {
+  movie = await api.movie(Number(id));
+} catch (e) {
+  errorMsg = e instanceof ApiError ? e.message : 'Failed to load movie';
+}
+
+const backdrop = movie ? backdropUrl(movie.backdrop_path, 'w1280') : null;
+const poster = movie ? posterUrl(movie.poster_path, 'w342') : null;
+---
+<DefaultLayout title={movie ? `Watch ${movie.title} — Hexen` : 'Watch — Hexen'}>
+  {errorMsg ? (
+    <div class="container-content py-16 text-center">
+      <p class="text-red-400">{errorMsg}</p>
+      <a href="/movies" class="mt-4 inline-block btn-ghost">← Back to Movies</a>
+    </div>
+  ) : movie ? (
+    <div class="container-content py-8">
+      <a href={`/movies/${movie.id}`} class="inline-flex items-center gap-1 text-sm text-ink-secondary hover:text-ink-primary">
+        ← Back to {movie.title}
+      </a>
+
+      <div class="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
+        {/* Player + stream picker */}
+        <div>
+          <h1 class="text-2xl font-bold">{movie.title}</h1>
+          <div class="mt-1 flex flex-wrap items-center gap-3 text-sm text-ink-secondary">
+            {movie.vote_average > 0 && <span class="text-yellow-400">★ {formatRating(movie.vote_average)}</span>}
+            {movie.release_date && <span>{formatDate(movie.release_date)}</span>}
+            {movie.runtime ? <span>{formatRuntime(movie.runtime)}</span> : null}
+          </div>
+
+          <StreamSourcePicker client:load query={movie.title} isTv={false} />
+        </div>
+
+        {/* Sidebar: info */}
+        <aside class="space-y-4">
+          <div class="card-surface p-4">
+            <div class="flex gap-4">
+              {poster ? (
+                <img src={poster} alt={movie.title} class="w-24 rounded-lg shadow-md" />
+              ) : null}
+              <div class="flex-1">
+                {movie.tagline && <p class="italic text-ink-secondary text-sm">{movie.tagline}</p>}
+                {movie.overview && <p class="mt-2 text-sm text-ink-secondary line-clamp-5">{movie.overview}</p>}
+              </div>
+            </div>
+            {movie.genres && movie.genres.length > 0 && (
+              <div class="mt-3 flex flex-wrap gap-2">
+                {movie.genres.map(g => <span class="chip text-xs">{g.name}</span>)}
+              </div>
+            )}
+          </div>
+
+          <div class="card-surface p-4">
+            <h3 class="mb-2 font-bold">Can't play?</h3>
+            <p class="text-sm text-ink-secondary">
+              If the video doesn't load, the source may be temporarily unavailable.
+              Try selecting a different resolution above, or check back later.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  ) : null}
+</DefaultLayout>

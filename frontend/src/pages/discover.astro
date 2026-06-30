@@ -1,114 +1,96 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import { getMovieGenres, getTVGenres, getAiringTodayTV, getOnTheAirTV, getTrendingMovies, getTrendingTV, getTrendingPeople } from '../lib/api';
+import DefaultLayout from '@/layouts/DefaultLayout.astro';
+import FilterPanel from '@/components/discover/FilterPanel.svelte';
+import PosterGrid from '@/components/media/PosterGrid.astro';
+import Pagination from '@/components/ui/Pagination.svelte';
+import Skeleton from '@/components/ui/Skeleton.astro';
+import { api, ApiError } from '@/lib/api/client';
+import type { Movie, TvShow, Paged } from '@/lib/api/types';
 
-type SectionState = { data: any[]; error: boolean };
-const state: Record<string, SectionState> = {};
-function mk() { return { data: [], error: false }; }
+const params = Astro.url.searchParams;
+const type = (params.get('type') as 'movie' | 'tv') || 'movie';
+const page = Math.max(1, parseInt(params.get('page') || '1'));
 
-const loaders: Record<string, () => Promise<any[]>> = {
-  movieGenres: getMovieGenres,
-  tvGenres: getTVGenres,
-  airingToday: getAiringTodayTV,
-  onTheAir: getOnTheAirTV,
-  trendingMovies: getTrendingMovies,
-  trendingTV: getTrendingTV,
-  trendingPeople: getTrendingPeople,
-};
-for (const k of Object.keys(loaders)) state[k] = mk();
+// Collect all filter params except type/page
+const filterKeys = ['sort_by', 'with_genres', 'vote_average.gte', 'with_original_language',
+  'primary_release_date.gte', 'primary_release_date.lte', 'first_air_date.gte', 'first_air_date.lte'];
+const filters: Record<string, string> = {};
+for (const key of filterKeys) {
+  const val = params.get(key);
+  if (val) filters[key] = val;
+}
+filters['page'] = String(page);
 
-await Promise.all(Object.entries(loaders).map(async ([k, fn]) => {
-  try { state[k].data = await fn(); } catch { state[k].error = true; }
-}));
+// Default sort
+if (!filters['sort_by']) filters['sort_by'] = 'popularity.desc';
 
-const anyError = Object.values(state).some((s: any) => s.error);
+let genres: { id: number; name: string }[] = [];
+try {
+  const g = await api.genres(type);
+  genres = g.genres ?? [];
+} catch { /* ignore genre load failure */ }
 
-const mediaSections = [
-  { key: 'airingToday', title: 'Airing Today', type: 'tv' },
-  { key: 'onTheAir', title: 'On The Air', type: 'tv' },
-  { key: 'trendingMovies', title: 'Trending Movies', type: 'movie' },
-  { key: 'trendingTV', title: 'Trending TV', type: 'tv' },
-  { key: 'trendingPeople', title: 'Trending People', type: 'person' },
-] as const;
+let data: Paged<Movie | TvShow> | null = null;
+let errorMsg = '';
+try {
+  data = type === 'tv'
+    ? await api.discoverTv(filters) as Paged<Movie | TvShow>
+    : await api.discoverMovie(filters) as Paged<Movie | TvShow>;
+} catch (e) {
+  errorMsg = e instanceof ApiError ? e.message : 'Failed to load results';
+}
+
+// Build search params for pagination (exclude page)
+const paginationParams: Record<string, string> = { type, ...filters };
+delete paginationParams['page'];
 ---
-<BaseLayout title="Discover">
-  <div class="container">
-    <h1 class="page-title">Discover</h1>
-    {anyError && <div class="error-msg">Some content failed to load. <a href="/discover">Retry</a></div>}
+<DefaultLayout title="Hexen — Discover" description="Discover movies and TV shows by genre, year, rating, and more.">
+  <div class="container-content py-8">
+    <h1 class="text-3xl font-extrabold">Discover</h1>
+    <p class="mt-1 text-ink-secondary">Filter movies and TV shows</p>
 
-    {state.movieGenres.data.length > 0 && (
+    <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr]">
       <div>
-        <h2 class="section-title">Movie Genres</h2>
-        <div class="genre-grid">
-          {state.movieGenres.data.map((g) => (
-            <a href={'/search?q=' + g.name} class="genre-card">{g.name}</a>
-          ))}
-        </div>
+        <FilterPanel
+          client:load
+          type={type}
+          genres={genres}
+          initialFilters={filters}
+        />
       </div>
-    )}
-    {state.movieGenres.error && (
-      <div class="error-msg">Failed to load movie genres. <a href="/discover">Retry</a></div>
-    )}
 
-    {state.tvGenres.data.length > 0 && (
       <div>
-        <h2 class="section-title">TV Genres</h2>
-        <div class="genre-grid">
-          {state.tvGenres.data.map((g) => (
-            <a href={'/search?q=' + g.name} class="genre-card">{g.name}</a>
-          ))}
-        </div>
+        {errorMsg ? (
+          <div class="rounded-lg border border-red-500/30 bg-red-500/10 p-6 text-center">
+            <p class="text-red-400">{errorMsg}</p>
+          </div>
+        ) : data ? (
+          <>
+            <div class="mb-4 flex items-center justify-between">
+              <p class="text-sm text-ink-secondary">
+                {data.total_results.toLocaleString()} results
+              </p>
+            </div>
+            {data.results.length > 0 ? (
+              <PosterGrid items={data.results} type={type} />
+            ) : (
+              <div class="py-16 text-center">
+                <p class="text-ink-secondary">No results match your filters.</p>
+                <p class="mt-1 text-sm text-ink-secondary">Try adjusting the filters on the left.</p>
+              </div>
+            )}
+            <Pagination
+              client:visible
+              page={data.page}
+              totalPages={Math.min(data.total_pages, 500)}
+              basePath="/discover"
+              searchParams={paginationParams}
+            />
+          </>
+        ) : (
+          <Skeleton count={18} />
+        )}
       </div>
-    )}
-    {state.tvGenres.error && (
-      <div class="error-msg">Failed to load TV genres. <a href="/discover">Retry</a></div>
-    )}
-
-    {mediaSections.map((section) => {
-      const s = state[section.key];
-      return (
-        <div>
-          <h2 class="section-title">{section.title}</h2>
-          {s.error ? (
-            <div class="error-msg">Failed to load {section.title.toLowerCase()}. <a href="/discover">Retry</a></div>
-          ) : s.data.length > 0 ? (
-            <div class="grid grid-6">
-              {s.data.slice(0, 6).map((m) => (
-                <a href={'/' + section.type + '/' + m.id} class="card">
-                  <div class="poster-wrap">
-                    {m.poster ? (
-                      <img src={m.poster} alt={m.title} loading="lazy" />
-                    ) : (
-                      <div class="poster-ph">{section.type === 'tv' ? '—' : section.type === 'person' ? '—' : '—'}</div>
-                    )}
-                    {m.rating > 0 && (
-                      <div class="card-rating"> {(m.rating / 10).toFixed(1)}</div>
-                    )}
-                  </div>
-                  <div class="card-info">
-                    <h3>{m.title}</h3>
-                    {m.year && <span class="card-year">{m.year}</span>}
-                  </div>
-                </a>
-              ))}
-            </div>
-          ) : (
-            <div class="empty-state">
-              <span class="empty-icon">{section.type === 'tv' ? '—' : section.type === 'person' ? '—' : '—'}</span>
-              <p>No {section.title.toLowerCase()} available right now.</p>
-              <p class="empty-hint">Try again later or browse a different category.</p>
-            </div>
-          )}
-        </div>
-      );
-    })}
+    </div>
   </div>
-</BaseLayout>
-
-<style>
-  .page-title { font-size: 36px; font-weight: 800; padding: 40px 0 0; }
-  .section-title { font-size: 20px; font-weight: 700; margin: 40px 0 16px; }
-  .genre-grid { display: flex; flex-wrap: wrap; gap: 10px; }
-  .genre-card { padding: 10px 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; transition: all 0.2s; }
-  .genre-card:hover { background: var(--accent); border-color: var(--accent); color: white; }
-</style>
+</DefaultLayout>

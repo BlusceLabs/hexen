@@ -1,0 +1,30 @@
+---
+import type { CastMember } from '@/lib/api/types';
+import { profileUrl } from '@/lib/utils/image';
+
+interface Props {
+  cast: CastMember[];
+}
+const { cast } = Astro.props;
+const limited = cast.slice(0, 20);
+---
+{limited.length > 0 && (
+  <section class="mt-8">
+    <h2 class="mb-3 text-xl font-bold">Cast</h2>
+    <div class="no-scrollbar flex gap-4 overflow-x-auto pb-2">
+      {limited.map((member) => (
+        <a href={`/person/${member.id}`} class="flex-shrink-0 w-24 text-center group">
+          <div class="mx-auto h-24 w-24 overflow-hidden rounded-full bg-base-elevated ring-2 ring-transparent group-hover:ring-accent transition">
+            {profileUrl(member.profile_path, 'w185') ? (
+              <img src={profileUrl(member.profile_path, 'w185')!} alt={member.name} class="h-full w-full object-cover" loading="lazy" />
+            ) : (
+              <div class="flex h-full w-full items-center justify-center text-2xl text-ink-secondary">{member.name.charAt(0)}</div>
+            )}
+          </div>
+          <p class="mt-2 truncate text-xs font-medium">{member.name}</p>
+          <p class="truncate text-xs text-ink-secondary">{member.character}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+)}

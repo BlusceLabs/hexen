@@ -30,10 +30,6 @@ def downloadable_tv_series_file_details():
 
     print(type(downloadable_files_detail))  # (1)
 
-    subtitles = downloadable_files_detail.captions
-
-    videos = downloadable_files_detail.downloads
-
 
 if __name__ == "__main__":
     downloadable_tv_series_file_details()

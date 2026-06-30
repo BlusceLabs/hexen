@@ -27,6 +27,7 @@ request_cookies = {}
 
 class UserInfo:
     """Frozen user-info data class"""
+
     __slots__ = ("token", "userId", "userType", "appType")
 
     def __init__(self, token: str, userId: str, userType: int, appType: int):
@@ -38,6 +39,7 @@ class UserInfo:
 
 class MovieboxAppInfo:
     """App-info data class"""
+
     __slots__ = ("channelType", "pkgName", "url", "versionCode", "versionName")
 
     def __init__(self, channelType, pkgName, url, versionCode, versionName):
@@ -100,7 +102,9 @@ class Session:
     def __repr__(self):
         return rf"<Session(MovieBoxAPI) timeout={self._timeout}>"
 
-    async def get(self, url: str, params: dict | None = None, **kwargs) -> Response:
+    async def get(
+        self, url: str, params: dict | None = None, **kwargs
+    ) -> Response:
         async with httpx.AsyncClient(
             headers=self._headers,
             cookies=self._cookies,

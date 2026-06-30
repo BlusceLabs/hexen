@@ -1,10 +1,16 @@
 """V2 Models"""
 
+from __future__ import annotations
+
 from json import loads
 from typing import Any
 
 from pydantic import BaseModel, HttpUrl, field_validator
 
+from hexenapi.backend.constants import (
+    SubjectType,  # Import SubjectType for forward references
+)
+from hexenapi.backend.helpers import get_absolute_url
 from hexenapi.v1.extractor.models.json import (
     MetadataModel,
     PostListModel,
@@ -20,13 +26,12 @@ from hexenapi.v1.models import (
     SearchResultsModel as SearchResultsModelV1,
     TrendingResultsModel,
 )
-from hexenapi.backend.helpers import get_absolute_url
 
 
 class ContentModelV2(ContentModel):
     """`homepage.operatingList[0].banner.items[0]`"""
 
-    subject: "SearchResultsItem | None"
+    subject: SearchResultsItem | None
     detailPath: str
     url: HttpUrl | None = None
 
@@ -103,7 +108,6 @@ class SearchResultsItem(SearchResultsItemV1):
     def validate_ops(cls, value: str) -> dict:
         if not value:
             return
-
         return loads(value)
 
     @field_validator("subtitles", mode="before")
@@ -111,7 +115,6 @@ class SearchResultsItem(SearchResultsItemV1):
     def validate_subtitles(cls, value: str) -> list[str]:
         if not value:
             return
-
         return value.split(",")
 
     @property
@@ -142,3 +145,8 @@ class SpecificItemDetailsModel(BaseModel):
     isForbid: bool
     watchTimeLimit: int
     postList: PostListModel
+    imdbRatingValue: float  # Fixed: was imbdRate, now matches v1 model
+
+
+# Rebuild models to resolve forward references
+SpecificItemDetailsModel.model_rebuild()

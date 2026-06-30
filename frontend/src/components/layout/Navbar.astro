@@ -1,0 +1,85 @@
+---
+import ThemeToggle from './ThemeToggle.svelte';
+import SearchBar from './SearchBar.svelte';
+
+const links = [
+  { href: '/home', label: 'Home' },
+  { href: '/movies', label: 'Movies' },
+  { href: '/tv', label: 'TV Shows' },
+  { href: '/discover', label: 'Discover' },
+];
+
+const { pathname } = Astro.url;
+const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
+---
+<header class="sticky top-0 z-40 border-b border-base-border bg-base/80 backdrop-blur-md">
+  <nav class="container-content flex h-16 items-center gap-6" aria-label="Main navigation">
+    <a href="/" class="flex items-center gap-2 text-lg font-extrabold tracking-tight">
+      <span class="text-accent" aria-hidden="true">▶</span>
+      <span>Hexen</span>
+    </a>
+
+    <!-- Desktop Navigation -->
+    <div class="hidden items-center gap-1 md:flex">
+      {links.map((l) => (
+        <a
+          href={l.href}
+          class:list={["px-3 py-2 text-sm font-medium transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-accent", isActive(l.href) ? "text-accent" : "text-ink-secondary hover:text-ink-primary hover:bg-base-elevated"]}
+          aria-current={isActive(l.href) ? 'page' : undefined}
+        >{l.label}</a>
+      ))}
+    </div>
+
+    <!-- Search Bar -->
+    <div class="ml-auto flex flex-1 items-center justify-end gap-2 md:justify-center">
+      <div class="w-full max-w-md">
+        <SearchBar client:load />
+      </div>
+    </div>
+
+    <ThemeToggle client:load />
+
+    <!-- Mobile Menu Button -->
+    <button
+      id="mobile-menu-button"
+      class="flex h-10 w-10 items-center justify-center rounded-lg md:hidden focus:outline-none focus:ring-2 focus:ring-accent"
+      aria-label="Toggle mobile menu"
+      aria-expanded="false"
+      aria-controls="mobile-menu"
+      type="button"
+    >
+      <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+  </nav>
+
+  <!-- Mobile Navigation Menu -->
+  <div 
+    id="mobile-menu" 
+    class="hidden border-t border-base-border bg-base md:hidden"
+    role="menu"
+  >
+    <div class="container-content space-y-1 py-4">
+      {links.map((l) => (
+        <a
+          href={l.href}
+          class:list={["block rounded-lg px-4 py-3 text-base font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-accent", isActive(l.href) ? "text-accent bg-base-elevated" : "text-ink-secondary hover:text-ink-primary hover:bg-base-elevated"]}
+          aria-current={isActive(l.href) ? 'page' : undefined}
+          role="menuitem"
+        >{l.label}</a>
+      ))}
+    </div>
+  </div>
+</header>
+
+<script>
+  const button = document.getElementById('mobile-menu-button');
+  const menu = document.getElementById('mobile-menu');
+  
+  button?.addEventListener('click', () => {
+    const isExpanded = button.getAttribute('aria-expanded') === 'true';
+    button.setAttribute('aria-expanded', String(!isExpanded));
+    menu?.classList.toggle('hidden');
+  });
+</script>

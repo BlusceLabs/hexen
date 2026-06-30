@@ -12,16 +12,18 @@ from pathlib import Path
 import httpx
 from throttlebuster import DownloadedFile, ThrottleBuster
 
-from hexenapi.utils import get_event_loop
-from hexenapi.backend.exceptions import BaseMovieboxException, InvalidDetailPathError
+from hexenapi.backend._web_models import SpecificItemDetailsModel
+from hexenapi.backend.exceptions import (
+    BaseMovieboxException,
+    InvalidDetailPathError,
+)
 from hexenapi.backend.helpers import (
     assert_instance,
     get_absolute_url,
     sanitize_item_name,
     validate_detail_path,
 )
-from hexenapi.backend._web_models import SpecificItemDetailsModel
-from hexenapi.backend.requests import Session
+from hexenapi.utils import get_event_loop
 
 # -------------------------------------------------------------------------
 # Constants inlined so v2/_bases is fully self-contained
@@ -38,6 +40,7 @@ DOWNLOAD_REQUEST_HEADERS = {
     ),
     "Referer": "https://fmoviesunblocked.net/",
 }
+
 
 # =====================================================================
 # Classes from v1._bases
@@ -104,9 +107,9 @@ class BaseFileDownloaderAndHelper(FileDownloaderHelper, BaseFileDownloader):
     ):
         if group and season and episode:
             working_dir = Path(working_dir)
-            assert working_dir.exists(), (
-                f"The chosen working directory does not exist - {working_dir}"
-            )
+            assert (
+                working_dir.exists()
+            ), f"The chosen working directory does not exist - {working_dir}"
             final_dir = working_dir.joinpath(
                 f"{search_results_item.title} "
                 f"({search_results_item.releaseDate.year})",
@@ -116,6 +119,7 @@ class BaseFileDownloaderAndHelper(FileDownloaderHelper, BaseFileDownloader):
                 os.makedirs(final_dir, exist_ok=True)
             return final_dir
         return working_dir
+
 
 # =====================================================================
 # Classes from v3._bases (ThrottleBuster-based downloader)
@@ -179,9 +183,9 @@ class V3FileDownloaderAndHelper(V3FileDownloaderHelper, V3BaseFileDownloader):
     ):
         if group and season and episode:
             working_dir = Path(working_dir)
-            assert working_dir.exists(), (
-                f"The chosen working directory does not exist - {working_dir}"
-            )
+            assert (
+                working_dir.exists()
+            ), f"The chosen working directory does not exist - {working_dir}"
             final_dir = working_dir.joinpath(
                 f"{downloadable_files_detail.subject_title} "
                 f"({downloadable_files_detail.release_date.year})",
@@ -192,6 +196,7 @@ class V3FileDownloaderAndHelper(V3FileDownloaderHelper, V3BaseFileDownloader):
             return final_dir
         return working_dir
 
+
 # =====================================================================
 # v2 BaseItemDetails
 # =====================================================================
@@ -200,11 +205,13 @@ class BaseItemDetails(BaseContentProviderAndHelper):
 
     api_endpoint = get_absolute_url("/wefeed-h5api-bff/detail")
 
-    def __init__(self, session: Session):
-        assert_instance(session, Session, "session")
+    def __init__(self, session):
+        from hexenapi.backend.requests import Session as SessionType
+
+        assert_instance(session, SessionType, "session")
         self._session = session
 
-    def _validate_detail_path(self, detail_path: str) -> t.NoReturn:
+    def _validate_detail_path(self, detail_path: str) -> None:
         if not validate_detail_path(detail_path):
             raise InvalidDetailPathError(
                 f"Invalid detail path passed {detail_path!r} "

@@ -1,5 +1,6 @@
 """This module stores constant variables"""
 
+import json
 import logging
 import os
 import random
@@ -17,13 +18,15 @@ from throttlebuster.constants import (
     DownloadMode,
 )
 
+from ._constants import DownloadStatus, SubjectType
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Base constants (was v1.constants / shared across versions)
 # ---------------------------------------------------------------------------
 
-type DownloadQualitiesType = t.Literal[
+DownloadQualitiesType = t.Literal[
     "WORST", "BEST", "360P", "480P", "720P", "1080P"
 ]
 
@@ -37,43 +40,11 @@ DOWNLOAD_QUALITIES = (
 )
 
 DEFAULT_CAPTION_LANGUAGE = "English"
-
 DEFAULT_CAPTION_LANGUAGE_SHORT = "en"
 
 CURRENT_WORKING_DIR = Path(os.getcwd())
-
 ITEM_DETAILS_PATH = "/detail"
-
 DEFAULT_TASKS = 5
-
-
-class SubjectType(IntEnum):
-    """Content types mapped to their integer representatives"""
-
-    ALL = 0
-    MOVIES = 1
-    TV_SERIES = 2
-    EDUCATION = 5
-    MUSIC = 6
-    ANIME = 7
-    OTHER = 8
-    UNKNOWN = 9
-
-    @classmethod
-    def map(cls, ignore_names: set[str] | None = None) -> dict[str, int]:
-        ignore_names = ignore_names or set()
-        resp = {}
-        for entry in cls:
-            if entry.name in ignore_names:
-                continue
-            resp[entry.name] = entry.value
-        return resp
-
-
-class DownloadStatus(StrEnum):
-    DOWNLOADING = "downloading"
-    FINISHED = "finished"
-
 
 # ---------------------------------------------------------------------------
 # v2-specific constants (also includes v3-specific ones)
@@ -83,9 +54,7 @@ MIRROR_HOSTS = ("h5-api.aoneroom.com",)
 
 ENVIRONMENT_HOST_KEY = "MOVIEBOX_API_HOST_V2"
 
-SELECTED_HOST = (
-    os.getenv(ENVIRONMENT_HOST_KEY) or MIRROR_HOSTS[0]
-)
+SELECTED_HOST = os.getenv(ENVIRONMENT_HOST_KEY) or MIRROR_HOSTS[0]
 
 HOST_PROTOCOL = "https"
 
@@ -99,8 +68,8 @@ DEFAULT_REQUEST_HEADERS = {
     "X-Client-Info": '{"timezone":"Africa/Nairobi"}',
     "Accept-Language": "en-US,en;q=0.5",
     "Accept": "application/json",
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101"
-    " Firefox/137.0",
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 "
+    "Firefox/137.0",
     "Referer": REFERER,
 }
 
@@ -130,7 +99,7 @@ SUBJECT_TYPE_CHANNEL_ID_MAP = {
 # V3 specific constants
 SECRET_KEY_DEFAULT: str = (
     os.getenv("MOVIEBOX_SECRET_KEY_DEFAULT", "").strip()
-    or "76iRl07s0xSN9jqmEWAt79EBJZulIQIsV64FZr2O"
+    or "76iRl07s0xSN9jqmEWAt79EBJZulIQIsV64Fzr2O"
 )
 SECRET_KEY_ALT: str = (
     os.getenv("MOVIEBOX_SECRET_KEY_ALT", "").strip()
@@ -187,14 +156,26 @@ def _generate_client_info() -> tuple[str, str]:
         f"(Linux; U; Android {android['version']}; en_US; "
         f"{device['model']}; Build/{android['build']}; Cronet/135.0.7012.3)"
     )
-    client_info = (
-        f'{{"package_name":"com.community.oneroom","version_name":"3.0.03.0529.03",'
-        f'"version_code":{version_code},"os":"android","os_version":"{android["version"]}",'
-        f'"install_ch":"ps","device_id":"{device_id}","install_store":"ps",'
-        f'"gaid":"{gaid}","brand":"{device["brand"]}","model":"{device["model"]}",'
-        f'"system_language":"en","net":"{network}","region":"US",'
-        f'"timezone":"{timezone}","sp_code":"40401","X-Play-Mode":"2"}}'
-    )
+    client_info_dict = {
+        "package_name": "com.community.oneroom",
+        "version_name": "3.0.03.0529.03",
+        "version_code": version_code,
+        "os": "android",
+        "os_version": android["version"],
+        "install_ch": "ps",
+        "device_id": device_id,
+        "install_store": "ps",
+        "gaid": gaid,
+        "brand": device["brand"],
+        "model": device["model"],
+        "system_language": "en",
+        "net": network,
+        "region": "US",
+        "timezone": timezone,
+        "sp_code": "40401",
+        "X-Play-Mode": "2",
+    }
+    client_info = json.dumps(client_info_dict, separators=(",", ":"))
     return user_agent, client_info
 
 
@@ -205,15 +186,17 @@ WEB_USER_AGENT: str = (
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/123.0.0.0 Safari/537.36"
 )
-RETRY_STATUS_CODES: frozenset[int] = frozenset({
-    403,
-    407,
-    429,
-    500,
-    502,
-    503,
-    504,
-})
+RETRY_STATUS_CODES: frozenset[int] = frozenset(
+    {
+        403,
+        407,
+        429,
+        500,
+        502,
+        503,
+        504,
+    }
+)
 BLOCKED_HOST_KEYWORDS: tuple[str, ...] = (
     "fzmovies",
     "vegamovies",
@@ -313,8 +296,8 @@ class CustomResolutionType(StrEnum):
             return map[value]
         except KeyError as e:
             raise ValueError(
-                f"Invalid value for {CustomResolutionType} {value!r} ",
-                f"Choose from {set(map.keys)}",
+                f"Invalid value for {cls.__name__} {value!r}. "
+                f"Choose from {set(map.keys)}"
             ) from e
 
     @classmethod

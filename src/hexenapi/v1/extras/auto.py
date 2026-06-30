@@ -281,9 +281,7 @@ class MovieAuto:
             caption_details_or_httpx_response,
         )
 
-    def run_sync(
-        self, *args, **kwargs
-    ) -> tuple[
+    def run_sync(self, *args, **kwargs) -> tuple[
         DownloadedFile | httpx.Response | None,
         DownloadedFile | httpx.Response | None,
     ]:

@@ -497,9 +497,10 @@ class CaptionFileDownloader(BaseFileDownloaderAndHelper):
             group=self.group_series,
         )
 
-        return sanitize_filename(
-            filename_template.format(**placeholders)
-        ), final_dir
+        return (
+            sanitize_filename(filename_template.format(**placeholders)),
+            final_dir,
+        )
 
     async def run(
         self,

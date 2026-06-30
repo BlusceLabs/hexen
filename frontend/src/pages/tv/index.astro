@@ -1,71 +1,70 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getPopularTV, getTopRatedTV, getAiringTodayTV, getOnTheAirTV } from '../../lib/api';
+import DefaultLayout from '@/layouts/DefaultLayout.astro';
+import PosterCard from '@/components/media/PosterCard.astro';
+import Pagination from '@/components/ui/Pagination.svelte';
+import Skeleton from '@/components/ui/Skeleton.astro';
+import { api, ApiError } from '@/lib/api/client';
+import type { TvShow, Paged } from '@/lib/api/types';
 
-const sections = [
-  { key: 'popular', title: 'Popular', loader: getPopularTV },
-  { key: 'topRated', title: 'Top Rated', loader: getTopRatedTV },
-  { key: 'airingToday', title: 'Airing Today', loader: getAiringTodayTV },
-  { key: 'onTheAir', title: 'On The Air', loader: getOnTheAirTV },
+const tabs = [
+  { action: 'popular', label: 'Popular' },
+  { action: 'top_rated', label: 'Top Rated' },
+  { action: 'airing_today', label: 'Airing Today' },
+  { action: 'on_the_air', label: 'On The Air' },
 ] as const;
 
-type SectionState = { data: any[]; error: boolean };
-const state: Record<string, SectionState> = {};
-for (const s of sections) state[s.key] = { data: [], error: false };
+const { action = 'popular', page = '1' } = Astro.url.query;
+const currentAction = tabs.some(t => t.action === action) ? action : 'popular';
+const currentPage = Math.max(1, parseInt(page) || 1);
 
-await Promise.all(sections.map(async (s) => {
-  try { state[s.key].data = await s.loader(); } catch { state[s.key].error = true; }
-}));
+let data: Paged<TvShow> | null = null;
+let errorMsg = '';
+try {
+  data = await api.tvList(currentAction as any, currentPage);
+} catch (e) {
+  errorMsg = e instanceof ApiError ? e.message : 'Failed to load TV shows';
+}
 
-const anyError = Object.values(state).some((s: any) => s.error);
+const activeTab = tabs.find(t => t.action === currentAction)!;
 ---
-<BaseLayout title="TV Shows">
-  <div class="container">
-    <h1 class="page-title">TV Shows</h1>
-    {anyError && <div class="error-msg">Some categories failed to load. <a href="/tv">Retry</a></div>}
+<DefaultLayout title="Hexen — TV Shows" description="Browse popular, top rated, airing today, and on the air TV shows.">
+  <div class="container-content py-8">
+    <h1 class="text-3xl font-extrabold">TV Shows</h1>
+    <p class="mt-1 text-ink-secondary">Browse {activeTab.label.toLowerCase()} TV shows</p>
 
-    {sections.map((section) => {
-      const s = state[section.key];
-      return (
-        <div>
-          <h2 class="section-title">{section.title}</h2>
-          {s.error ? (
-            <div class="error-msg">Failed to load {section.title.toLowerCase()}. <a href="/tv">Retry</a></div>
-          ) : s.data.length > 0 ? (
-            <div class="grid grid-5">
-              {s.data.slice(0, 10).map((m) => (
-                <a href={'/tv/' + m.id} class="card">
-                  <div class="poster-wrap">
-                    {m.poster ? (
-                      <img src={m.poster} alt={m.title} loading="lazy" />
-                    ) : (
-                      <div class="poster-ph">—</div>
-                    )}
-                    {m.rating > 0 && (
-                      <div class="card-rating"> {(m.rating / 10).toFixed(1)}</div>
-                    )}
-                  </div>
-                  <div class="card-info">
-                    <h3>{m.title}</h3>
-                    {m.year && <span class="card-year">{m.year}</span>}
-                  </div>
-                </a>
-              ))}
-            </div>
-          ) : (
-            <div class="empty-state">
-              <span class="empty-icon">—</span>
-              <p>No {section.title.toLowerCase()} available right now.</p>
-              <p class="empty-hint">Try again later or browse a different category.</p>
-            </div>
-          )}
+    <div class="mt-6 flex flex-wrap gap-2">
+      {tabs.map((t) => (
+        <a
+          href={`/tv?action=${t.action}&page=1`}
+          class:list={["chip", t.action === currentAction && "chip-active"]}
+        >
+          {t.label}
+        </a>
+      ))}
+    </div>
+
+    {errorMsg ? (
+      <div class="mt-8 rounded-lg border border-red-500/30 bg-red-500/10 p-6 text-center">
+        <p class="text-red-400">{errorMsg}</p>
+        <p class="mt-2 text-sm text-ink-secondary">Is the backend running on {import.meta.env.PUBLIC_API_BASE ?? 'http://localhost:8000'}?</p>
+      </div>
+    ) : data ? (
+      <>
+        <div class="poster-grid mt-8">
+          {data.results.map((t) => (
+            <PosterCard item={t} type="tv" />
+          ))}
         </div>
-      );
-    })}
+        <Pagination
+          client:visible
+          page={data.page}
+          totalPages={Math.min(data.total_pages, 500)}
+          basePath="/tv"
+          searchParams={{ action: currentAction }}
+        />
+      </>
+    ) : (
+      <div class="mt-8"><Skeleton count={18} /></div>
+    )}
   </div>
-</BaseLayout>
-
-<style>
-  .page-title { font-size: 36px; font-weight: 800; padding: 40px 0 0; }
-  .section-title { font-size: 20px; font-weight: 700; margin: 40px 0 16px; }
-</style>
+</DefaultLayout>

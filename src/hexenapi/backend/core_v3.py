@@ -92,12 +92,14 @@ class Homepage:
 
     def get_content_sync(self, *args, **kwargs) -> dict:
         import asyncio
+
         return asyncio.get_event_loop().run_until_complete(
             self.get_content(*args, **kwargs)
         )
 
     def get_content_model_sync(self, *args, **kwargs) -> RootHomepageModel:
         import asyncio
+
         return asyncio.get_event_loop().run_until_complete(
             self.get_content_model(*args, **kwargs)
         )
@@ -483,8 +485,9 @@ class DownloadableVideoFilesDetail:
         client_session: MovieBoxHttpClient,
         page: int = 1,
         per_page: int = RESULTS_PER_PAGE_AMOUNT,
-        resolution: ResolutionType
-        | CustomResolutionType = CustomResolutionType.BEST,
+        resolution: (
+            ResolutionType | CustomResolutionType
+        ) = CustomResolutionType.BEST,
     ):
         self.client_session = client_session
         self.page = page
