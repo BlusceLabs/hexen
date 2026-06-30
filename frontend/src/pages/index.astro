@@ -1,105 +1,109 @@
 ---
 import DefaultLayout from '@/layouts/DefaultLayout.astro';
+import HeroBanner from '@/components/streaming/HeroBanner.astro';
+import ContentCarousel from '@/components/streaming/ContentCarousel.svelte';
 import { api } from '@/lib/api/client';
 import type { SearchResult } from '@/lib/api/types';
-import { backdropUrl } from '@/lib/utils/image';
 
+let featured: SearchResult | null = null;
 let trending: SearchResult[] = [];
-let heroError = false;
+let popularMovies: SearchResult[] = [];
+let popularTV: SearchResult[] = [];
+let topRated: SearchResult[] = [];
+
 try {
-  const res = await api.trending('all', 'day');
-  trending = res.results.filter((r) => r.backdrop_path).slice(0, 6);
-} catch {
-  heroError = true;
-}
+  // Fetch trending for hero banner
+  const trendingRes = await api.trending('all', 'day');
+  trending = trendingRes.results.filter((r) => r.backdrop_path);
+  featured = trending[0] || null;
 
-const hero = trending[0];
-const rails = trending.slice(1);
+  // Fetch popular movies
+  const moviesRes = await api.movies.popular(1);
+  popularMovies = moviesRes.results.slice(0, 20);
 
-function hrefFor(item: SearchResult): string {
-  return item.media_type === 'tv' ? `/tv/${item.id}` : `/movies/${item.id}`;
-}
-function titleFor(item: SearchResult): string {
-  return item.title ?? item.name ?? 'Untitled';
+  // Fetch popular TV shows
+  const tvRes = await api.tv.popular(1);
+  popularTV = tvRes.results.slice(0, 20);
+
+  // Fetch top rated
+  const topRatedRes = await api.movies.topRated(1);
+  topRated = topRatedRes.results.slice(0, 20);
+} catch (error) {
+  console.error('Error fetching content:', error);
 }
 ---
-<DefaultLayout title="Hexen — Stream Movies & TV">
-  <section class="relative h-[70vh] min-h-[480px] w-full overflow-hidden">
-    {hero && backdropUrl(hero.backdrop_path, 'w1280') ? (
-      <>
-        <img
-          src={backdropUrl(hero.backdrop_path, 'w1280')!}
-          alt=""
-          class="absolute inset-0 h-full w-full object-cover"
-        />
-        <div class="absolute inset-0 bg-gradient-to-t from-base via-base/60 to-base/20"></div>
-        <div class="container-content relative flex h-full items-end pb-12">
-          <div class="max-w-2xl">
-            <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl">
-              {titleFor(hero)}
-            </h1>
-            {hero.overview && (
-              <p class="mt-3 max-w-xl text-base text-ink-secondary line-clamp-3">{hero.overview}</p>
-            )}
-            <div class="mt-6 flex gap-3">
-              <a href={hrefFor(hero)} class="btn-primary">View Details</a>
-              <a href="/discover" class="btn-ghost">Browse</a>
-            </div>
-          </div>
-        </div>
-      </>
-    ) : (
-      <div class="flex h-full items-center justify-center">
-        <p class="text-ink-secondary">
-          {heroError
-            ? `Could not reach backend at ${import.meta.env.PUBLIC_API_BASE ?? 'http://localhost:8000'}`
-            : 'Loading…'}
-        </p>
-      </div>
-    )}
-  </section>
 
-  <div class="container-content py-12">
-    <h2 class="text-2xl font-bold">Welcome to Hexen</h2>
-    <p class="mt-2 text-ink-secondary">Movies, TV shows, and streaming — powered by TMDB and Moviebox.</p>
+<DefaultLayout title="Hexen — Stream Movies & TV Shows">
+  <!-- Hero Banner -->
+  {#if featured}
+    <HeroBanner featured={featured} />
+  {/if}
 
-    <div class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-      <a href="/movies" class="card-surface p-6 hover:border-accent transition-colors">
-        <h3 class="font-semibold">🎬 Movies</h3>
-        <p class="mt-1 text-sm text-ink-secondary">Popular, top rated, now playing</p>
-      </a>
-      <a href="/tv" class="card-surface p-6 hover:border-accent transition-colors">
-        <h3 class="font-semibold">📺 TV Shows</h3>
-        <p class="mt-1 text-sm text-ink-secondary">Airing today, on the air, top rated</p>
-      </a>
-      <a href="/discover" class="card-surface p-6 hover:border-accent transition-colors">
-        <h3 class="font-semibold">🔍 Discover</h3>
-        <p class="mt-1 text-sm text-ink-secondary">Filter by genre, year, rating</p>
-      </a>
-      <a href="/search" class="card-surface p-6 hover:border-accent transition-colors">
-        <h3 class="font-semibold">⭐ Search</h3>
-        <p class="mt-1 text-sm text-ink-secondary">Find anything</p>
-      </a>
-    </div>
+  <!-- Content Sections -->
+  <div class="space-y-8 pb-12">
+    {#if trending.length > 1}
+      <ContentCarousel 
+        title="Trending Now" 
+        items={trending.slice(1, 21)}
+        href="/discover?sort=popularity.desc"
+        client:load
+      />
+    {/if}
 
-    {rails.length > 0 && (
-      <>
-        <h2 class="mt-12 text-2xl font-bold">Trending Today</h2>
-        <div class="poster-grid mt-4">
-          {rails.map((item) => (
-            <a href={hrefFor(item)} class="card-surface overflow-hidden hover:scale-105 transition-transform duration-200">
-              <div class="aspect-[2/3] bg-base-elevated">
-                {backdropUrl(item.backdrop_path, 'w300') && (
-                  <img src={backdropUrl(item.backdrop_path, 'w300')!} alt={titleFor(item)} class="h-full w-full object-cover" loading="lazy" />
-                )}
-              </div>
-              <div class="p-3">
-                <p class="truncate text-sm font-medium">{titleFor(item)}</p>
-              </div>
-            </a>
-          ))}
-        </div>
-      </>
-    )}
+    {#if popularMovies.length > 0}
+      <ContentCarousel 
+        title="Popular Movies" 
+        items={popularMovies}
+        href="/movies"
+        client:load
+      />
+    {/if}
+
+    {#if popularTV.length > 0}
+      <ContentCarousel 
+        title="Popular TV Shows" 
+        items={popularTV}
+        href="/tv"
+        client:load
+      />
+    {/if}
+
+    {#if topRated.length > 0}
+      <ContentCarousel 
+        title="Top Rated" 
+        items={topRated}
+        href="/movies?sort=vote_average.desc"
+        client:load
+      />
+    {/if}
   </div>
+
+  <!-- Browse by Genre Section -->
+  <section class="container-content py-12">
+    <h2 class="mb-6 text-2xl font-bold">Browse by Genre</h2>
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      {[
+        { name: 'Action', id: 28, emoji: '💥' },
+        { name: 'Comedy', id: 35, emoji: '😂' },
+        { name: 'Drama', id: 18, emoji: '🎭' },
+        { name: 'Horror', id: 27, emoji: '👻' },
+        { name: 'Sci-Fi', id: 878, emoji: '🚀' },
+        { name: 'Romance', id: 10749, emoji: '💕' },
+        { name: 'Thriller', id: 53, emoji: '🔪' },
+        { name: 'Animation', id: 16, emoji: '🎨' },
+        { name: 'Documentary', id: 99, emoji: '📽️' },
+        { name: 'Fantasy', id: 14, emoji: '🧙' }
+      ].map((genre) => (
+        <a
+          href={`/discover?with_genres=${genre.id}`}
+          class="group relative overflow-hidden rounded-xl border border-base-border bg-gradient-to-br from-base-surface to-base-elevated p-6 text-center shadow-lg transition-all hover:scale-105 hover:border-accent hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-accent"
+        >
+          <div class="mb-2 text-4xl">{genre.emoji}</div>
+          <h3 class="font-semibold text-ink-primary group-hover:text-accent transition-colors">
+            {genre.name}
+          </h3>
+        </a>
+      ))}
+    </div>
+  </section>
 </DefaultLayout>
